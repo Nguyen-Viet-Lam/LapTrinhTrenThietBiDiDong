@@ -1,0 +1,106 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isSelf(uid) { return signedIn() && request.auth.uid == uid; }
+    function groupMember(groupId) {
+      return signedIn() && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid));
+    }
+    function groupOwner(groupId) {
+      return signedIn() && get(/databases/$(database)/documents/groups/$(groupId)).data.ownerId == request.auth.uid;
+    }
+    function validQuest() {
+      return request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 80
+        && request.resource.data.description is string
+        && request.resource.data.description.size() <= 500
+        && request.resource.data.status in ['draft', 'active', 'completed', 'archived', 'cancelled']
+        && request.resource.data.difficulty in ['easy', 'medium', 'hard'];
+    }
+
+    match /users/{uid} {
+      allow create: if isSelf(uid)
+        && request.resource.data.xp == 0
+        && request.resource.data.level == 1;
+      allow read: if isSelf(uid);
+      allow update: if isSelf(uid)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['displayName', 'bio', 'avatarUrl', 'interests', 'timezone',
+                    'onboardingCompleted', 'notificationEnabled', 'profileVisibility', 'updatedAt']);
+      allow delete: if false;
+
+      match /devices/{deviceId} { allow read, write: if isSelf(uid); }
+      match /badges/{badgeId} { allow read: if isSelf(uid); allow write: if false; }
+      match /blockedUsers/{blockedUid} { allow read, write: if isSelf(uid); }
+    }
+
+    match /publicProfiles/{uid} {
+      allow read: if signedIn();
+      allow write: if isSelf(uid)
+        && request.resource.data.keys().hasOnly(['displayName', 'avatarUrl', 'updatedAt']);
+    }
+
+    match /quests/{questId} {
+      allow create: if signedIn() && validQuest()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.xpAwarded == false
+        && (request.resource.data.groupId == null || groupMember(request.resource.data.groupId));
+      allow read: if signedIn() && (
+        resource.data.ownerId == request.auth.uid
+        || request.auth.uid in resource.data.assigneeIds
+        || (resource.data.groupId != null && groupMember(resource.data.groupId))
+      );
+      allow update: if signedIn() && validQuest()
+        && (resource.data.ownerId == request.auth.uid || request.auth.uid in resource.data.assigneeIds)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['title', 'description', 'category', 'difficulty', 'stepsCount',
+                    'progress', 'dueAt', 'reminderAt', 'recurrence', 'updatedAt']);
+      allow delete: if false;
+
+      match /steps/{stepId} {
+        allow read: if signedIn() && (
+          get(/databases/$(database)/documents/quests/$(questId)).data.ownerId == request.auth.uid
+          || request.auth.uid in get(/databases/$(database)/documents/quests/$(questId)).data.assigneeIds
+          || groupMember(get(/databases/$(database)/documents/quests/$(questId)).data.groupId)
+        );
+        allow create, update: if signedIn()
+          && request.resource.data.title is string
+          && request.resource.data.title.size() <= 160
+          && request.resource.data.keys().hasOnly(['title', 'isCompleted', 'order', 'completedBy', 'completedAt']);
+        allow delete: if false;
+      }
+    }
+
+    match /groups/{groupId} {
+      allow read: if groupMember(groupId);
+      allow create, delete: if false;
+      allow update: if groupOwner(groupId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['name', 'description', 'avatarUrl', 'updatedAt']);
+
+      match /members/{uid} { allow read: if groupMember(groupId); allow write: if false; }
+      match /activities/{activityId} { allow read: if groupMember(groupId); allow write: if false; }
+    }
+
+    match /reports/{reportId} {
+      allow create: if signedIn()
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() <= 500;
+      allow read: if signedIn() && resource.data.reporterId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'readAt']);
+      allow create, delete: if false;
+    }
+
+    match /aiRequests/{id} { allow read, write: if false; }
+    match /idempotency/{id} { allow read, write: if false; }
+    match /{document=**} { allow read, write: if false; }
+  }
+}
