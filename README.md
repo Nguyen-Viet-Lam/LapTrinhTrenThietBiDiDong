@@ -8,7 +8,7 @@ LifeQuest là ứng dụng di động biến công việc đời thường thàn
 - Đăng nhập, hồ sơ và thiết lập an toàn.
 - Quest cá nhân/nhóm, checklist, XP, streak, huy hiệu.
 - Nhóm có mã mời, phân quyền, bảng hoạt động và realtime sync.
-- AI gợi ý/chia nhỏ quest; API key chỉ ở Cloud Functions.
+- AI gợi ý/chia nhỏ quest; API key chỉ ở backend.
 - Báo cáo, chặn người dùng, rời nhóm, quyền riêng tư.
 - Thông báo nhắc hạn.
 - Mock/Emulator mode để demo ổn định khi không có API AI.
@@ -17,9 +17,9 @@ LifeQuest là ứng dụng di động biến công việc đời thường thàn
 
 - Flutter 3.x, Dart 3.x, Material 3.
 - Riverpod, GoRouter, Freezed/json_serializable.
-- Firebase Auth, Firestore, Storage, FCM, Crashlytics.
-- Cloud Functions TypeScript và Gemini API.
-- Firebase Emulator Suite, flutter_test, mocktail, integration_test.
+- Backend: Node.js + Express, SQLite (migration trong `backend/sql`), JWT + bcrypt, SSE realtime.
+- AI: Gemini API (server) hoặc mock an toàn.
+- Firebase chỉ dùng để host bản web demo. Kiểm thử: flutter_test, node:test.
 
 ## Chạy ứng dụng ngay
 
@@ -56,23 +56,9 @@ flutter build web --release
 firebase deploy --only hosting --project flutter-firebase-6b5af
 ```
 
-## Firebase production backend
+## Backend REST API
 
-Repository có sẵn `firestore.rules`, `firestore.indexes.json`, `firebase.json` và Cloud Functions TypeScript trong `functions/`. Đây là backend production cho group membership, invite code hash, completeQuest transaction/idempotency và AI proxy an toàn.
-
-```powershell
-Copy-Item .firebaserc.example .firebaserc
-# Sửa project id trong .firebaserc
-Set-Location functions
-npm install
-npm run build
-Set-Location ..
-firebase emulators:start
-```
-
-Để triển khai AI production, cấu hình secret ở Firebase/Google Secret Manager với tên `GEMINI_API_KEY`. Không đặt key vào Flutter source hoặc `.env` của ứng dụng.
-
-> Bản Flutter hiện dùng local repository để chạy độc lập. Khi đưa lên production, tạo adapter Firebase Auth/Firestore/Functions theo cùng model và chuyển provider trong bootstrap; backend và rules đã được chuẩn bị cho đường nâng cấp này.
+Backend nằm trong [backend/](backend/) (xem [backend/README.md](backend/README.md)): 12 test tích hợp, SQLite có migration, JWT, SSE. Bản Flutter hiện vẫn chạy Demo Local Mode; việc nối app với API xem [ANTIGRAVITY_TASKS.md](ANTIGRAVITY_TASKS.md).
 
 ## Chức năng đã triển khai
 
@@ -91,6 +77,7 @@ firebase emulators:start
 ## Tài liệu
 
 - [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md): backlog, schema, kiến trúc, tiêu chí nghiệm thu.
+- [ANTIGRAVITY_TASKS.md](ANTIGRAVITY_TASKS.md): danh sách việc chi tiết để nối Flutter với API.
 - [ANTIGRAVITY_PROMPTS.md](ANTIGRAVITY_PROMPTS.md): prompt giao trực tiếp cho Antigravity từng chặng.
 - [BAO_CAO_DO_AN.md](BAO_CAO_DO_AN.md): nội dung nền để viết báo cáo môn học.
 - [ANTIGRAVITY_REPORT_PROMPT.md](ANTIGRAVITY_REPORT_PROMPT.md): prompt yêu cầu Antigravity đọc code và hoàn thiện báo cáo.

@@ -133,11 +133,27 @@ export function createApp({db = openDb(), jwtSecret = process.env.JWT_SECRET ?? 
     const u = one('SELECT * FROM users WHERE id=?', id);
     res.status(201).json({token: token(u), user: userDto(u)});
   }));
+  // Chống dò mật khẩu: tối đa 5 lần sai / 15 phút cho mỗi email
+  const fails = new Map();
+  const MAX_FAILS = Number(process.env.LOGIN_MAX_FAILS ?? 5), WINDOW = 15 * 60 * 1000;
   app.post('/api/auth/login', wrap((req, res) => {
     const d = parse(schemas.login, req.body);
+    const rec = fails.get(d.email);
+    if (rec && Date.now() - rec.first < WINDOW && rec.count >= MAX_FAILS) throw new HttpError(429, 'Đăng nhập sai quá nhiều lần. Vui lòng thử lại sau 15 phút.');
     const u = one('SELECT * FROM users WHERE email=?', d.email);
-    if (!u || !bcrypt.compareSync(d.password, u.password_hash)) throw new HttpError(401, 'Email hoặc mật khẩu không đúng.');
+    if (!u || !bcrypt.compareSync(d.password, u.password_hash)) {
+      const fresh = !rec || Date.now() - rec.first >= WINDOW;
+      fails.set(d.email, fresh ? {first: Date.now(), count: 1} : {first: rec.first, count: rec.count + 1});
+      throw new HttpError(401, 'Email hoặc mật khẩu không đúng.');
+    }
+    fails.delete(d.email);
     res.json({token: token(u), user: userDto(u)});
+  }));
+  app.post('/api/auth/change-password', auth, wrap((req, res) => {
+    const d = parse(z.object({currentPassword: z.string().min(1).max(72), newPassword: z.string().min(6).max(72)}), req.body);
+    if (!bcrypt.compareSync(d.currentPassword, req.user.password_hash)) throw new HttpError(401, 'Mật khẩu hiện tại không đúng.');
+    run('UPDATE users SET password_hash=?, password_changed_at=? WHERE id=?', bcrypt.hashSync(d.newPassword, 10), now(), req.user.id);
+    res.json({ok: true});
   }));
   app.get('/api/me', auth, (req, res) => res.json(userDto(req.user)));
   app.patch('/api/me', auth, wrap((req, res) => {
@@ -161,6 +177,7 @@ export function createApp({db = openDb(), jwtSecret = process.env.JWT_SECRET ?? 
   // ---------- Quests ----------
   app.get('/api/quests', auth, wrap((req, res) => {
     const where = ['(q.owner_id=@u OR q.assignee_id=@u OR q.group_id IN (SELECT group_id FROM group_members WHERE user_id=@u))'];
+    where.push('(q.owner_id=@u OR q.owner_id NOT IN (SELECT blocked_id FROM blocks WHERE user_id=@u))');
     const p = {u: req.user.id};
     if (req.query.status) { where.push('q.status=@s'); p.s = String(req.query.status); }
     if (req.query.groupId) { where.push('q.group_id=@g'); p.g = String(req.query.groupId); }

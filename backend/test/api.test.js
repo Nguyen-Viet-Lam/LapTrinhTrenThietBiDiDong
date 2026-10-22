@@ -90,3 +90,50 @@ test('thông báo, báo cáo, chặn, xóa tài khoản', async () => {
   assert.equal((await call('DELETE', '/me', null, t)).status, 204);
   assert.equal((await call('GET', '/me', null, t)).status, 401);
 });
+
+test('rate limit đăng nhập: sai 5 lần thì bị khóa 429', async () => {
+  await call('POST', '/auth/register', {email: 'rl@b.vn', password: '123456', displayName: 'RL'});
+  for (let i = 0; i < 5; i++) assert.equal((await call('POST', '/auth/login', {email: 'rl@b.vn', password: 'saisai'})).status, 401);
+  assert.equal((await call('POST', '/auth/login', {email: 'rl@b.vn', password: '123456'})).status, 429);
+});
+
+test('đổi mật khẩu', async () => {
+  const t = (await call('POST', '/auth/register', {email: 'cp@b.vn', password: '123456', displayName: 'CP'})).body.token;
+  assert.equal((await call('POST', '/auth/change-password', {currentPassword: 'sai', newPassword: '654321'}, t)).status, 401);
+  assert.equal((await call('POST', '/auth/change-password', {currentPassword: '123456', newPassword: '654321'}, t)).status, 200);
+  assert.equal((await call('POST', '/auth/login', {email: 'cp@b.vn', password: '123456'})).status, 401);
+  assert.equal((await call('POST', '/auth/login', {email: 'cp@b.vn', password: '654321'})).status, 200);
+});
+
+test('chặn người dùng: ẩn quest nhóm của người bị chặn', async () => {
+  const owner = await login();
+  const friend = await login('ban@lifequest.vn');
+  await call('POST', '/quests', {title: 'Quest của Huy', groupId: 'sample-group'}, friend);
+  const titles = async () => (await call('GET', '/quests?groupId=sample-group', null, owner)).body.map((q) => q.title);
+  assert.ok((await titles()).includes('Quest của Huy'));
+  await call('POST', '/blocks', {userId: 'friend-user'}, owner);
+  assert.ok(!(await titles()).includes('Quest của Huy'));
+  await call('DELETE', '/blocks/friend-user', null, owner);
+  assert.ok((await titles()).includes('Quest của Huy'));
+});
+
+test('SSE: thành viên nhóm nhận sự kiện realtime, người ngoài bị từ chối', async () => {
+  const owner = await login();
+  const friend = await login('ban@lifequest.vn');
+  const outsider = (await call('POST', '/auth/register', {email: 'sse@b.vn', password: '123456', displayName: 'S'})).body.token;
+  assert.equal((await fetch(`${base}/groups/sample-group/events?token=${outsider}`)).status, 404);
+  const ctrl = new AbortController();
+  const res = await fetch(`${base}/groups/sample-group/events?token=${owner}`, {signal: ctrl.signal});
+  assert.equal(res.status, 200);
+  const reader = res.body.getReader();
+  await reader.read(); // event: ready
+  await call('POST', '/quests', {title: 'SSE quest', groupId: 'sample-group'}, friend);
+  const {value} = await reader.read();
+  assert.match(new TextDecoder().decode(value), /event: quest\.created/);
+  ctrl.abort();
+});
+
+test('migration: user_version = số file sql', () => {
+  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 2);
+  assert.ok(db.prepare('PRAGMA table_info(users)').all().some((c) => c.name === 'password_changed_at'));
+});

@@ -8,9 +8,9 @@ title: "BÁO CÁO ĐỒ ÁN CUỐI KỲ"
 
 **Đề tài:** LifeQuest – Ứng dụng nhiệm vụ đời thường an toàn có tích hợp AI và đồng bộ nhóm trên thiết bị di động
 
-**Thành viên:** [Họ tên – MSSV] ; [Họ tên – MSSV]
+**Thành viên:** Nguyễn Viết Lãm – 2380601183 (Trưởng nhóm); Trần Ngọc Lợi – 2380601292; Nguyễn Đại Kỳ – 2380601178; Châu Tuấn – 2380602434
 
-**Lớp/Nhóm:** [CHÈN LỚP / NHÓM]
+**Lớp/Nhóm:** [CHÈN LỚP] – Nhóm 10
 
 **Giảng viên phụ trách:** [CHÈN TÊN GIẢNG VIÊN]
 
@@ -30,14 +30,14 @@ title: "BÁO CÁO ĐỒ ÁN CUỐI KỲ"
 |---|---|---|
 | Mobile App | Flutter / Dart (Material 3) | Xây dựng ứng dụng di động Android/iOS/Web |
 | Backend/API | Node.js + Express (thư mục `backend/`) | REST API cho tài khoản, quest, nhóm, AI, thông báo, an toàn |
-| Cơ sở dữ liệu | SQLite (`node:sqlite`), 9 bảng có khóa ngoại | Lưu trữ người dùng, quest, nhóm, thông báo, báo cáo |
+| Cơ sở dữ liệu | SQLite (`node:sqlite`), 9 bảng có khóa ngoại, migration `.sql` | Lưu trữ người dùng, quest, nhóm, thông báo, báo cáo |
 | Authentication | JWT + bcrypt | Đăng ký, đăng nhập, băm mật khẩu, bảo vệ API |
 | Realtime | Server-Sent Events (SSE) | Đẩy sự kiện đồng bộ quest/thành viên trong nhóm |
 | AI | Gemini API (phía server) + chế độ mock an toàn | Gợi ý chia nhỏ mục tiêu thành quest |
 | Validation | Zod | Kiểm tra dữ liệu đầu vào ở API |
 | State Management | Riverpod, GoRouter | Quản lý trạng thái và điều hướng ứng dụng |
 | Local Storage | SharedPreferences | Lưu dữ liệu cục bộ ở chế độ Demo Local |
-| Triển khai web | Firebase Hosting | Bản demo web: https://flutter-firebase-6b5af.web.app |
+| Triển khai web | Firebase Hosting (chỉ host bản web) | Bản demo web: https://flutter-firebase-6b5af.web.app |
 | Kiểm thử | flutter_test, node:test | Unit/widget test và test tích hợp API |
 
 ### b. Tổng hợp chức năng
@@ -58,13 +58,14 @@ title: "BÁO CÁO ĐỒ ÁN CUỐI KỲ"
 | 10 | Nhóm | Tạo nhóm, mã mời (lưu hash, hết hạn 7 ngày), tham gia | Hoàn thành | Hoàn thành (local) |
 | 11 | Nhóm | Rời nhóm, xóa thành viên, chuyển quyền, xóa nhóm | Hoàn thành | Chỉ có rời nhóm |
 | 12 | Nhóm | Quest nhóm, giao việc cho thành viên | Hoàn thành | Quest nhóm cơ bản |
-| 13 | Nhóm | Đồng bộ thời gian thực giữa thiết bị (SSE) | Hoàn thành (chưa có test tự động) | **Chưa nối** |
+| 13 | Nhóm | Đồng bộ thời gian thực giữa thiết bị (SSE) | Hoàn thành (có test tự động) | **Chưa nối** |
 | 14 | AI | Sinh bản nháp quest, người dùng duyệt trước khi lưu | Hoàn thành (mock; Gemini khi có API key) | Hoàn thành (mock local) |
 | 15 | AI | Chặn nội dung nguy hiểm, giới hạn tần suất gọi | Hoàn thành | Chặn từ khóa ở local |
 | 16 | Thông báo | Danh sách, đánh dấu đã đọc | Hoàn thành | Hoàn thành (local) |
-| 17 | An toàn | Báo cáo vi phạm, chặn người dùng | Hoàn thành | Hoàn thành (local) |
+| 17 | An toàn | Báo cáo vi phạm, chặn người dùng (ẩn quest nhóm của người bị chặn) | Hoàn thành | Hoàn thành (local) |
 | 18 | Thông báo | Push notification (FCM) / nhắc hạn trên hệ điều hành | Chưa xây dựng | Chưa xây dựng |
-| 19 | Tài khoản | Đăng nhập Google, quên mật khẩu, xác minh email | Chưa xây dựng | Chưa xây dựng |
+| 19 | Tài khoản | Đổi mật khẩu; chống dò mật khẩu (khóa 5 lần sai/15 phút) | Hoàn thành | Chưa có màn hình |
+| 19b | Tài khoản | Đăng nhập Google, quên mật khẩu qua email, xác minh email | Chưa xây dựng | Chưa xây dựng |
 | 20 | Hệ thống | Kết nối app Flutter ↔ REST API | Sẵn sàng | **Chưa hoàn thiện** |
 
 ## 1.2. Minh họa chi tiết các chức năng
@@ -129,13 +130,13 @@ title: "BÁO CÁO ĐỒ ÁN CUỐI KỲ"
 
 | Hạng mục | Lệnh | Kết quả |
 |---|---|---|
-| API + CSDL | `cd backend && npm test` | **7/7 test đạt** (công thức level, xác thực, quest + XP idempotent, phân quyền, nhóm, AI, thông báo/báo cáo/chặn/xóa tài khoản) |
+| API + CSDL | `cd backend && npm test` | **12/12 test đạt** (công thức level, xác thực, rate limit đăng nhập, đổi mật khẩu, quest + XP idempotent, phân quyền, nhóm, SSE realtime, AI, thông báo/báo cáo/chặn/xóa tài khoản, migration) |
 | Flutter | `flutter analyze`, `flutter test` | `flutter analyze`: không có lỗi; `flutter test`: **7/7 test đạt** |
 
 # 2. Kết luận
 
 **Đã hoàn thành:** Backend REST API đầy đủ nghiệp vụ (tài khoản JWT, quest, XP/streak idempotent, nhóm có phân quyền, AI an toàn, thông báo, báo cáo/chặn) với CSDL SQLite có khóa ngoại và bộ test tự động; ứng dụng Flutter chạy đủ luồng ở Demo Local Mode và đã triển khai bản web.
 
-**Còn hạn chế:** Giao diện Flutter chưa gọi REST API nên dữ liệu chưa đồng bộ giữa các thiết bị; SSE chưa có test tự động và chưa dùng trên app; AI mặc định là mock nếu chưa cấu hình `GEMINI_API_KEY`; chưa có push notification, đăng nhập Google, quên mật khẩu, sửa quest/quản trị nhóm trên giao diện; backend chưa được triển khai lên máy chủ công cộng.
+**Còn hạn chế:** Giao diện Flutter chưa gọi REST API nên dữ liệu chưa đồng bộ giữa các thiết bị; SSE đã có test nhưng chưa dùng trên app; AI mặc định là mock nếu chưa cấu hình `GEMINI_API_KEY`; chưa có push notification, đăng nhập Google, quên mật khẩu, sửa quest/quản trị nhóm trên giao diện; backend chưa được triển khai lên máy chủ công cộng.
 
 **Hướng phát triển:** nối app với API (Dio + lưu JWT, dùng SSE cho nhóm), triển khai backend lên dịch vụ cloud với PostgreSQL/MySQL, thêm FCM và nhắc hạn, đăng nhập Google, chat nhóm, trang quản trị xử lý báo cáo.

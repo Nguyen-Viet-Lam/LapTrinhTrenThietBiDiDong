@@ -7,11 +7,11 @@ cd backend
 npm install
 cp .env.example .env   # tuỳ chọn; đặt JWT_SECRET, GEMINI_API_KEY
 npm start              # http://localhost:3000/api/health, tự tạo DB + dữ liệu demo
-npm test               # 7 test tích hợp chạy trên SQLite in-memory
+npm test               # 12 test tích hợp chạy trên SQLite in-memory
 ```
 
 - Tài khoản demo: `demo@lifequest.vn` / `123456` (và `ban@lifequest.vn`), nhóm mã mời `LIFE2026`.
-- DB: file `data/lifequest.db` (đổi bằng `DB_FILE`). Schema ở `src/db.js` (users, groups_, group_members, quests, quest_steps, notifications, reports, blocks, ai_requests), khoá ngoại + `ON DELETE CASCADE`.
+- DB: file `data/lifequest.db` (đổi bằng `DB_FILE`). Schema nằm trong `sql/*.sql` (migration chạy tự động khi khởi động, phiên bản lưu ở `PRAGMA user_version`; thêm cột mới = thêm file `sql/003_*.sql`). Bảng: (users, groups_, group_members, quests, quest_steps, notifications, reports, blocks, ai_requests), khoá ngoại + `ON DELETE CASCADE`.
 - Android emulator gọi API qua `http://10.0.2.2:3000/api`.
 - Không có `GEMINI_API_KEY` → `/api/ai/quest-plan` dùng mock an toàn (`source: "mock"`); có key → gọi Gemini (`source: "gemini"`).
 
@@ -26,7 +26,8 @@ npm test               # 7 test tích hợp chạy trên SQLite in-memory
 | Method | Path | Mô tả |
 |---|---|---|
 | POST | `/api/auth/register` `{email,password,displayName}` | Đăng ký → `{token,user}` |
-| POST | `/api/auth/login` `{email,password}` | Đăng nhập → `{token,user}` |
+| POST | `/api/auth/login` `{email,password}` | Đăng nhập → `{token,user}`; sai 5 lần/15 phút → 429 |
+| POST | `/api/auth/change-password` `{currentPassword,newPassword}` | Đổi mật khẩu |
 | GET/PATCH/DELETE | `/api/me` | Hồ sơ (`displayName, interests, onboardingCompleted, notificationsEnabled, darkMode`) / xoá tài khoản (cascade) |
 | GET | `/api/stats` | XP, level, streak, số quest, huy hiệu |
 | GET | `/api/quests?status=&groupId=&q=` | Danh sách quest (của tôi, được giao, quest nhóm) + tìm kiếm |
@@ -45,7 +46,7 @@ npm test               # 7 test tích hợp chạy trên SQLite in-memory
 | POST | `/api/ai/quest-plan` `{goal,difficulty,constraints}` | Bản nháp quest (không tự lưu). 422 nếu nội dung nguy hiểm, 429 nếu gọi quá nhanh |
 | GET | `/api/notifications` · POST `/api/notifications/read-all` | Thông báo |
 | POST | `/api/reports` `{targetType,targetId,reason}` | Báo cáo vi phạm |
-| GET/POST/DELETE | `/api/blocks`, `/api/blocks/:uid` | Chặn người dùng |
+| GET/POST/DELETE | `/api/blocks`, `/api/blocks/:uid` | Chặn người dùng (quest nhóm của người bị chặn bị ẩn khỏi `GET /api/quests`) |
 
 ## Gợi ý cho frontend (Antigravity)
 Thay `SharedPreferences` repository trong `lib/app_controller.dart` bằng client HTTP (Dio/http) gọi các endpoint trên, lưu token bằng `shared_preferences`/`flutter_secure_storage`; dùng SSE (`/groups/:id/events`) để refresh quest nhóm. JSON trả về trùng tên field với `lib/models.dart` (`isDone`, `xpReward`, `xpAwarded`, `dueAt`, `createdByAi`...); khác biệt: `AppUser.streak` ↔ `streak`, nhóm trả `members[]` thay cho `memberIds`.
