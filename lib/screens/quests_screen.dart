@@ -13,6 +13,7 @@ class QuestsScreen extends ConsumerStatefulWidget {
 
 class _QuestsScreenState extends ConsumerState<QuestsScreen> {
   QuestStatus status = QuestStatus.active;
+  String selectedCategory = 'Tất cả';
   String search = '';
   bool refreshing = false;
   String? error;
@@ -31,14 +32,49 @@ class _QuestsScreenState extends ConsumerState<QuestsScreen> {
     }
   }
 
+  Widget _buildDiscoveryChip(String name, IconData icon) {
+    final isSelected = selectedCategory == name;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        selected: isSelected,
+        avatar: Icon(
+          icon,
+          size: 16,
+          color: isSelected ? Colors.white : const Color(0xFF0284C7),
+        ),
+        label: Text(name),
+        labelStyle: TextStyle(
+          fontSize: 12.5,
+          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+          color: isSelected ? Colors.white : const Color(0xFF334155),
+        ),
+        selectedColor: const Color(0xFF0284C7),
+        backgroundColor: const Color(0xFFF1F5F9),
+        checkmarkColor: Colors.white,
+        showCheckmark: false,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: isSelected ? const Color(0xFF0284C7) : const Color(0xFFE2E8F0),
+          ),
+        ),
+        onSelected: (_) => setState(() => selectedCategory = name),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = ref.watch(appControllerProvider);
     final isAdmin = controller.isAdmin;
     final quests = controller.myQuests.where((quest) {
       final matchesStatus = quest.status == status;
+      final matchesCategory = selectedCategory == 'Tất cả' ||
+          quest.category.trim().toLowerCase() == selectedCategory.trim().toLowerCase();
       final term = search.trim().toLowerCase();
       return matchesStatus &&
+          matchesCategory &&
           (term.isEmpty ||
               quest.title.toLowerCase().contains(term) ||
               quest.category.toLowerCase().contains(term));
@@ -118,7 +154,22 @@ class _QuestsScreenState extends ConsumerState<QuestsScreen> {
                 onSelectionChanged: (value) =>
                     setState(() => status = value.first),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+              // Quest Discovery: 5 Trụ Cột Đời Thường & Danh Mục
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildDiscoveryChip('Tất cả', Icons.auto_awesome),
+                    _buildDiscoveryChip('Sức khỏe', Icons.directions_run),
+                    _buildDiscoveryChip('Học tập', Icons.school_outlined),
+                    _buildDiscoveryChip('Công việc', Icons.work_outline),
+                    _buildDiscoveryChip('Gia đình', Icons.family_restroom),
+                    _buildDiscoveryChip('Khác', Icons.grid_view_outlined),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
               if (error != null)
                 Card(
                   color: Theme.of(context).colorScheme.errorContainer,

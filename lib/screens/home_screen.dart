@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app_controller.dart';
 import '../models.dart';
+import 'design_v2_widgets.dart';
 import 'quest_widgets.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -301,8 +302,9 @@ class HomeScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              Text(
-                '${user.xp} XP',
+              AnimatedCounter(
+                value: user.xp,
+                suffix: ' XP',
                 style: const TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
@@ -973,8 +975,10 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  /// 4. Level Progress Bar Card (Nova Icy Gradient)
+  /// 4. Level Progress Bar Card (Nova Icy Gradient with Neon ProgressRing & AnimatedCounter)
   Widget _buildLevelCard(AppUser user, double levelProgress, int xpNeeded) {
+    final progressPct = (levelProgress.clamp(0.0, 1.0) * 100).toInt();
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
@@ -997,39 +1001,31 @@ class HomeScreen extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
+                // Neon Circular ProgressRing displaying Level & Arc
+                ProgressRing(
+                  progress: levelProgress,
+                  size: 62,
+                  strokeWidth: 5.5,
+                  startColor: const Color(0xFF99F6E4),
+                  endColor: Colors.white,
+                  glow: true,
+                  centerWidget: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.star, color: Color(0xFFFCD34D), size: 14),
+                      Text(
+                        '${user.level}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                          height: 1.1,
+                        ),
                       ),
                     ],
                   ),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.star, color: Color(0xFFF59E0B), size: 14),
-                        Text(
-                          '${user.level}',
-                          style: const TextStyle(
-                            color: Color(0xFF0284C7),
-                            fontWeight: FontWeight.w900,
-                            fontSize: 17,
-                            height: 1.1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1060,23 +1056,48 @@ class HomeScreen extends ConsumerWidget {
                               ),
                             ),
                           ),
+                          const Spacer(),
+                          Text(
+                            '$progressPct%',
+                            style: const TextStyle(
+                              color: Color(0xFFE0F2FE),
+                              fontWeight: FontWeight.w900,
+                              fontSize: 14,
+                            ),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        '${user.xp} XP tích lũy • Cần $xpNeeded XP để lên cấp kế tiếp',
-                        style: const TextStyle(
-                          color: Color(0xFFE0F2FE),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      const SizedBox(height: 5),
+                      Row(
+                        children: [
+                          AnimatedCounter(
+                            value: user.xp,
+                            suffix: ' XP tích lũy',
+                            style: const TextStyle(
+                              color: Color(0xFFE0F2FE),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Flexible(
+                            child: Text(
+                              ' • Cần $xpNeeded XP lên cấp',
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFFE0F2FE),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: LinearProgressIndicator(
