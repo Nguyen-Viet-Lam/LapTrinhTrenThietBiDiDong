@@ -66,6 +66,35 @@ class QuestCard extends ConsumerWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
+              if (quest.imageUrl != null && quest.imageUrl!.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    quest.imageUrl!,
+                    height: 120,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.photo_outlined, size: 18),
+                            SizedBox(width: 6),
+                            Text('Ảnh bối cảnh nhiệm vụ', style: TextStyle(fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               LinearProgressIndicator(
                 value: quest.progress,
@@ -172,6 +201,35 @@ class _QuestDetailSheetState extends ConsumerState<QuestDetailSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (quest.imageUrl != null && quest.imageUrl!.isNotEmpty) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image.network(
+                    quest.imageUrl!,
+                    height: 160,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 90,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.photo_camera_back_outlined),
+                            SizedBox(width: 8),
+                            Text('Ảnh bối cảnh đời thực'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ],
               Row(
                 children: [
                   Expanded(
@@ -382,6 +440,7 @@ class CreateQuestSheet extends ConsumerStatefulWidget {
     this.initialSteps = const [],
     this.initialCategory = 'Sức khỏe',
     this.initialDifficulty = QuestDifficulty.easy,
+    this.initialImageUrl,
     this.createdByAi = false,
     this.groupId,
     super.key,
@@ -392,6 +451,7 @@ class CreateQuestSheet extends ConsumerStatefulWidget {
   final List<String> initialSteps;
   final String initialCategory;
   final QuestDifficulty initialDifficulty;
+  final String? initialImageUrl;
   final bool createdByAi;
   final String? groupId;
 
@@ -400,6 +460,7 @@ class CreateQuestSheet extends ConsumerStatefulWidget {
 }
 
 class _CreateQuestSheetState extends ConsumerState<CreateQuestSheet> {
+  late String? imageUrl = widget.initialImageUrl;
   late final TextEditingController title = TextEditingController(
     text: widget.initialTitle,
   );
@@ -449,6 +510,39 @@ class _CreateQuestSheetState extends ConsumerState<CreateQuestSheet> {
                 widget.createdByAi ? 'Duyệt bản nháp AI' : 'Tạo nhiệm vụ',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
+              if (imageUrl != null && imageUrl!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        imageUrl!,
+                        height: 130,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 70,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Text('Ảnh đính kèm từ AI Vision'),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: IconButton.filledTonal(
+                        icon: const Icon(Icons.close, size: 16),
+                        onPressed: () => setState(() => imageUrl = null),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 16),
               TextField(
                 controller: title,
@@ -641,6 +735,7 @@ class _CreateQuestSheetState extends ConsumerState<CreateQuestSheet> {
                                 createdByAi: widget.createdByAi,
                                 groupId: widget.groupId,
                                 assigneeId: assigneeId,
+                                imageUrl: imageUrl,
                               );
                           if (context.mounted) Navigator.pop(context);
                         } on ApiException catch (e) {

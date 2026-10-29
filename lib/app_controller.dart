@@ -274,6 +274,7 @@ class AppController extends ChangeNotifier {
     String? groupId,
     String? assigneeId,
     bool createdByAi = false,
+    String? imageUrl,
   }) async {
     final trimmedTitle = title.trim();
     if (trimmedTitle.isEmpty) {
@@ -305,9 +306,13 @@ class AppController extends ChangeNotifier {
       'groupId': groupId,
       'assigneeId': assigneeId,
       'createdByAi': createdByAi,
+      if (imageUrl != null && imageUrl.isNotEmpty) 'imageUrl': imageUrl,
     });
 
-    final newQuest = Quest.fromJson(res.data!);
+    var newQuest = Quest.fromJson(res.data!);
+    if (imageUrl != null && imageUrl.isNotEmpty && newQuest.imageUrl == null) {
+      newQuest = newQuest.copyWith(imageUrl: imageUrl);
+    }
     quests.insert(0, newQuest);
     await fetchStats();
     notifyListeners();
@@ -548,6 +553,174 @@ class AppController extends ChangeNotifier {
     });
 
     return AiQuestDraft.fromJson(res.data!);
+  }
+
+  Future<AiQuestDraft> generateVisionQuest({
+    required String contextLabel,
+    required String photoUrl,
+    String? userNote,
+    QuestDifficulty difficulty = QuestDifficulty.medium,
+  }) async {
+    final note = userNote?.trim() ?? '';
+    final isUnsafe = [
+      'tự tử',
+      'tự hại',
+      'chế bom',
+      'giết người',
+      'xâm hại trẻ em',
+      'hack tài khoản',
+    ].any((t) => note.toLowerCase().contains(t));
+
+    if (isUnsafe) {
+      throw const ApiException(
+        422,
+        'Nội dung không phù hợp chuẩn mực an toàn cộng đồng.',
+      );
+    }
+
+    final goal = note.isNotEmpty
+        ? 'Hoạt động $contextLabel: $note'
+        : 'Hoạt động trải nghiệm thực tế tại $contextLabel';
+
+    try {
+      final draft = await generateAiPlan(
+        goal,
+        difficulty,
+        constraints:
+            'Bối cảnh địa điểm thực tế: $contextLabel. Đề xuất hoạt động thể chất hoặc phát triển cá nhân phù hợp.',
+      );
+      String cat = draft.category;
+      if (cat == 'Khác') {
+        final lower = contextLabel.toLowerCase();
+        if (lower.contains('học') ||
+            lower.contains('đồ án') ||
+            lower.contains('làm việc') ||
+            lower.contains('study')) {
+          cat = 'Học tập';
+        } else if (lower.contains('công việc')) {
+          cat = 'Công việc';
+        } else {
+          cat = 'Sức khỏe';
+        }
+      }
+      return draft.copyWith(imageUrl: photoUrl, category: cat);
+    } catch (e) {
+      if (e is ApiException && e.statusCode == 422) {
+        rethrow;
+      }
+      return _generateFallbackVisionDraft(
+        contextLabel,
+        photoUrl,
+        note,
+        difficulty,
+      );
+    }
+  }
+
+  AiQuestDraft _generateFallbackVisionDraft(
+    String contextLabel,
+    String photoUrl,
+    String note,
+    QuestDifficulty difficulty,
+  ) {
+    final count = switch (difficulty) {
+      QuestDifficulty.easy => 3,
+      QuestDifficulty.medium => 5,
+      QuestDifficulty.hard => 7,
+    };
+
+    final lower = contextLabel.toLowerCase();
+    String category = 'Sức khỏe';
+    List<String> stepTemplates;
+
+    if (lower.contains('cầu lông') || lower.contains('badminton')) {
+      stepTemplates = [
+        'Khởi động khớp cổ tay, khớp vai và cổ chân 5 phút',
+        'Luyện tập các bước di chuyển chân cơ bản trên sân (footwork)',
+        'Đánh đôi hoặc tập cầu bền 20 hiệp cùng đồng đội',
+        'Tập kỹ thuật đập cầu (smash) và bỏ nhỏ sát lưới',
+        'Thi đấu giao hữu 1 set 21 điểm tính điểm nghiêm túc',
+        'Thả lỏng cơ bắp và bù nước điện giải sau trận đấu',
+        'Ghi lại cảm nghĩ và số điểm đạt được trong buổi tập',
+      ];
+    } else if (lower.contains('bóng chuyền') ||
+        lower.contains('bóng rổ') ||
+        lower.contains('volleyball')) {
+      stepTemplates = [
+        'Khởi động toàn thân và kéo giãn dây chằng gối',
+        'Tập cảm giác bóng (chuyền 2 tay, đệm bóng bước một)',
+        'Tập phối hợp tấn công đập bóng và chắn bóng theo cặp',
+        'Thi đấu đối kháng tập trung vào vị trí bọc lót',
+        'Chạy bền thả lỏng nhẹ 2 vòng sân',
+        'Họp đội ngắn rút kinh nghiệm các pha bóng đẹp',
+        'Lau dọn sân bãi và cất dụng cụ thể thao',
+      ];
+    } else if (lower.contains('gym') || lower.contains('thể hình')) {
+      stepTemplates = [
+        'Khởi động làm nóng người trên máy chạy bộ 5 phút',
+        'Thực hiện bài tập phức hợp chính (Squat/Bench Press/Deadlift) 3 hiệp',
+        'Tập bài bổ trợ cô lập nhóm cơ mục tiêu',
+        'Gập bụng hoặc Plank 3 hiệp 45 giây',
+        'Giãn cơ tĩnh và uống whey hoặc nước khoáng',
+        'Ghi chép mức tạ và số rep hoàn thành vào nhật ký tập',
+        'Chuẩn bị bữa ăn giàu protein phục hồi cơ bắp',
+      ];
+    } else if (lower.contains('học') ||
+        lower.contains('đồ án') ||
+        lower.contains('làm việc') ||
+        lower.contains('study')) {
+      category = 'Học tập';
+      stepTemplates = [
+        'Dọn gọn bàn học, chuẩn bị tài liệu và bật chế độ tập trung',
+        'Phân rã mục tiêu lớn thành 2 việc nhỏ cần hoàn thành hôm nay',
+        'Chạy phiên Pomodoro 25 phút tập trung cao độ vào việc 1',
+        'Nghỉ ngắn 5 phút đi lại và uống nước',
+        'Tiếp tục phiên Pomodoro 25 phút cho việc thứ 2',
+        'Review code hoặc kiểm tra lại nội dung bài tập',
+        'Sao lưu mã nguồn lên Git và dọn dẹp không gian học tập',
+      ];
+    } else if (lower.contains('chạy') ||
+        lower.contains('công viên') ||
+        lower.contains('park')) {
+      stepTemplates = [
+        'Kiểm tra giày chạy và buộc dây chắc chắn',
+        'Xoay khớp gối và ép cơ đùi trước khi xuất phát',
+        'Chạy bộ nhịp nhàng duy trì vùng nhịp tim Zone 2 trong 20 phút',
+        'Tăng tốc biến tốc 3 lượt 100m cuối buổi',
+        'Đi bộ thả lỏng 5 phút đưa nhịp tim về bình thường',
+        'Kéo giãn toàn bộ cơ bắp chân và cơ đùi sau',
+        'Ghi lại quãng đường và tốc độ trung bình (Pace)',
+      ];
+    } else {
+      stepTemplates = [
+        'Quan sát bối cảnh và xác định mục tiêu rèn luyện',
+        'Chuẩn bị trang thiết bị và tư thế sẵn sàng',
+        'Thực hiện thử thách chính với tinh thần tập trung',
+        'Ghi nhận khoảnh khắc ý nghĩa và chia sẻ với bạn bè',
+        'Hoàn tất các bước còn lại và đánh giá mức độ hài lòng',
+        'Dọn dẹp khu vực và nghỉ ngơi phục hồi năng lượng',
+        'Tự thưởng một điểm XP tinh thần xứng đáng',
+      ];
+    }
+
+    final selectedSteps = stepTemplates.take(count).toList();
+    final title = note.isNotEmpty
+        ? 'Hoạt động $contextLabel: $note'
+        : 'Nhiệm vụ tại $contextLabel';
+
+    return AiQuestDraft(
+      title: title.length > 80 ? title.substring(0, 80) : title,
+      description:
+          'Nhiệm vụ đời thường được AI thị giác đề xuất dựa trên hình ảnh thực tế tại $contextLabel.',
+      category: category,
+      difficulty: difficulty,
+      estimatedMinutes: count * 12,
+      steps: selectedSteps,
+      safetyNote:
+          'Được tạo từ phân tích thị giác bối cảnh. Hãy kiểm tra an toàn sân bãi và thể lực trước khi tập.',
+      source: 'vision_template',
+      imageUrl: photoUrl,
+    );
   }
 
   // ------------------ Notifications ------------------

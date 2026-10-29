@@ -207,3 +207,4 @@ class _ProgressRingPainter extends CustomPainter {
         oldDelegate.endColor != endColor;
   }
 }
+

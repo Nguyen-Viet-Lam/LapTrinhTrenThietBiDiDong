@@ -68,6 +68,7 @@ class Quest {
     this.createdByAi = false,
     this.xpReward = 20,
     this.xpAwarded = false,
+    this.imageUrl,
   });
 
   final String id;
@@ -86,6 +87,7 @@ class Quest {
   final bool createdByAi;
   final int xpReward;
   final bool xpAwarded;
+  final String? imageUrl;
 
   double get progress => steps.isEmpty
       ? (status == QuestStatus.completed ? 1.0 : 0.0)
@@ -105,6 +107,7 @@ class Quest {
     bool? createdByAi,
     int? xpReward,
     bool? xpAwarded,
+    String? imageUrl,
   }) => Quest(
     id: id,
     ownerId: ownerId,
@@ -122,6 +125,7 @@ class Quest {
     createdByAi: createdByAi ?? this.createdByAi,
     xpReward: xpReward ?? this.xpReward,
     xpAwarded: xpAwarded ?? this.xpAwarded,
+    imageUrl: imageUrl ?? this.imageUrl,
   );
 
   Map<String, dynamic> toJson() => {
@@ -141,6 +145,7 @@ class Quest {
     'createdByAi': createdByAi,
     'xpReward': xpReward,
     'xpAwarded': xpAwarded,
+    if (imageUrl != null) 'imageUrl': imageUrl,
   };
 
   factory Quest.fromJson(Map<String, dynamic> json) => Quest(
@@ -166,6 +171,7 @@ class Quest {
     createdByAi: json['createdByAi'] as bool? ?? false,
     xpReward: json['xpReward'] as int? ?? 20,
     xpAwarded: json['xpAwarded'] as bool? ?? false,
+    imageUrl: json['imageUrl'] as String?,
   );
 }
 
@@ -430,6 +436,7 @@ class AiQuestDraft {
     required this.steps,
     required this.safetyNote,
     required this.source,
+    this.imageUrl,
   });
 
   final String title;
@@ -440,6 +447,29 @@ class AiQuestDraft {
   final List<String> steps;
   final String safetyNote;
   final String source;
+  final String? imageUrl;
+
+  AiQuestDraft copyWith({
+    String? title,
+    String? description,
+    String? category,
+    QuestDifficulty? difficulty,
+    int? estimatedMinutes,
+    List<String>? steps,
+    String? safetyNote,
+    String? source,
+    String? imageUrl,
+  }) => AiQuestDraft(
+    title: title ?? this.title,
+    description: description ?? this.description,
+    category: category ?? this.category,
+    difficulty: difficulty ?? this.difficulty,
+    estimatedMinutes: estimatedMinutes ?? this.estimatedMinutes,
+    steps: steps ?? this.steps,
+    safetyNote: safetyNote ?? this.safetyNote,
+    source: source ?? this.source,
+    imageUrl: imageUrl ?? this.imageUrl,
+  );
 
   factory AiQuestDraft.fromJson(Map<String, dynamic> json) => AiQuestDraft(
     title: json['title'] as String? ?? '',
@@ -452,6 +482,7 @@ class AiQuestDraft {
     steps: List<String>.from(json['steps'] as List<dynamic>? ?? []),
     safetyNote: json['safetyNote'] as String? ?? '',
     source: json['source'] as String? ?? 'mock',
+    imageUrl: json['imageUrl'] as String?,
   );
 }
 
