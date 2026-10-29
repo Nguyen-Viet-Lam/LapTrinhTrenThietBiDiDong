@@ -94,6 +94,8 @@ class Quest {
       : steps.where((step) => step.isDone).length / steps.length;
 
   Quest copyWith({
+    String? id,
+    String? ownerId,
     String? title,
     String? description,
     String? category,
@@ -109,8 +111,8 @@ class Quest {
     bool? xpAwarded,
     String? imageUrl,
   }) => Quest(
-    id: id,
-    ownerId: ownerId,
+    id: id ?? this.id,
+    ownerId: ownerId ?? this.ownerId,
     title: title ?? this.title,
     description: description ?? this.description,
     category: category ?? this.category,
@@ -301,6 +303,19 @@ class GroupMember {
   final DateTime? joinedAt;
 
   bool get isOwner => role == 'owner';
+
+  GroupMember copyWith({
+    String? id,
+    String? displayName,
+    String? role,
+    DateTime? joinedAt,
+  }) =>
+      GroupMember(
+        id: id ?? this.id,
+        displayName: displayName ?? this.displayName,
+        role: role ?? this.role,
+        joinedAt: joinedAt ?? this.joinedAt,
+      );
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -607,4 +622,16 @@ class GroupChatMessage {
         createdAt: DateTime.parse(json['createdAt'] as String),
         isSelf: json['isSelf'] as bool? ?? false,
       );
+}
+
+class CompleteQuestResult {
+  const CompleteQuestResult({
+    required this.xpAwarded,
+    required this.idempotent,
+    required this.quest,
+  });
+
+  final int xpAwarded;
+  final bool idempotent;
+  final Quest quest;
 }

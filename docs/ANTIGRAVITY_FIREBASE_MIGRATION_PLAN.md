@@ -322,3 +322,4 @@ Dùng Firestore Transaction hoặc Cloud Function:
 
 ## Giai đoạn 11: Gỡ legacy sau nghiệm thu
 Chỉ làm sau khi Firebase app chạy ổn và người phụ trách chấp thuận.
+

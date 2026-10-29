@@ -6,27 +6,33 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'api/api_client.dart';
 import 'api/api_exception.dart';
 import 'models.dart';
+import 'repositories/auth_repository.dart';
+import 'repositories/group_repository.dart';
+import 'repositories/quest_repository.dart';
+import 'repositories/safety_repository.dart';
+import 'repositories/user_repository.dart';
 
 final appControllerProvider = ChangeNotifierProvider<AppController>((ref) {
   throw UnimplementedError('AppController must be overridden at bootstrap');
 });
 
-class CompleteQuestResult {
-  const CompleteQuestResult({
-    required this.xpAwarded,
-    required this.idempotent,
-    required this.quest,
-  });
-
-  final int xpAwarded;
-  final bool idempotent;
-  final Quest quest;
-}
 
 class AppController extends ChangeNotifier {
-  AppController(this.apiClient);
+  AppController(
+    this.apiClient, {
+    this.authRepository,
+    this.userRepository,
+    this.questRepository,
+    this.groupRepository,
+    this.safetyRepository,
+  });
 
   final ApiClient apiClient;
+  final IAuthRepository? authRepository;
+  final IUserRepository? userRepository;
+  final IQuestRepository? questRepository;
+  final IGroupRepository? groupRepository;
+  final ISafetyRepository? safetyRepository;
 
   AppUser? currentUser;
   UserStats? stats;
@@ -49,6 +55,11 @@ class AppController extends ChangeNotifier {
   static Future<AppController> create({
     ApiClient? client,
     SharedPreferences? preferences,
+    IAuthRepository? authRepo,
+    IUserRepository? userRepo,
+    IQuestRepository? questRepo,
+    IGroupRepository? groupRepo,
+    ISafetyRepository? safetyRepo,
   }) async {
     final prefs = preferences ?? await SharedPreferences.getInstance();
     late AppController controller;
@@ -59,7 +70,29 @@ class AppController extends ChangeNotifier {
             controller.handleUnauthorized();
           },
         );
-    controller = AppController(api);
+
+    IAuthRepository? aRepo = authRepo;
+    IUserRepository? uRepo = userRepo;
+    IQuestRepository? qRepo = questRepo;
+    IGroupRepository? gRepo = groupRepo;
+    ISafetyRepository? sRepo = safetyRepo;
+
+    try {
+      aRepo ??= FirebaseAuthRepository();
+      uRepo ??= FirestoreUserRepository();
+      qRepo ??= FirestoreQuestRepository();
+      gRepo ??= FirestoreGroupRepository();
+      sRepo ??= FirestoreSafetyRepository();
+    } catch (_) {}
+
+    controller = AppController(
+      api,
+      authRepository: aRepo,
+      userRepository: uRepo,
+      questRepository: qRepo,
+      groupRepository: gRepo,
+      safetyRepository: sRepo,
+    );
     await controller.init();
     return controller;
   }
@@ -76,12 +109,23 @@ class AppController extends ChangeNotifier {
 
   Future<void> init() async {
     try {
-      await apiClient.loadToken();
-      if (apiClient.token != null && apiClient.token!.isNotEmpty) {
-        final res = await apiClient.get<Map<String, dynamic>>('/me');
-        if (res.data != null) {
-          currentUser = AppUser.fromJson(res.data!);
+      final fbUser = authRepository?.currentUser;
+      if (fbUser != null && userRepository != null) {
+        final profile = await userRepository!.getUserProfile(fbUser.uid);
+        if (profile != null) {
+          currentUser = profile;
           await refreshAllData();
+        }
+      }
+
+      if (currentUser == null) {
+        await apiClient.loadToken();
+        if (apiClient.token != null && apiClient.token!.isNotEmpty) {
+          final res = await apiClient.get<Map<String, dynamic>>('/me');
+          if (res.data != null) {
+            currentUser = AppUser.fromJson(res.data!);
+            await refreshAllData();
+          }
         }
       }
     } catch (_) {
@@ -113,6 +157,34 @@ class AppController extends ChangeNotifier {
     if (!normalized.contains('@')) return 'Email không hợp lệ.';
     if (password.isEmpty) return 'Vui lòng nhập mật khẩu.';
 
+    if (authRepository != null && userRepository != null) {
+      try {
+        final cred = await authRepository!.signIn(normalized, password);
+        final uid = cred.user?.uid;
+        if (uid != null) {
+          var profile = await userRepository!.getUserProfile(uid);
+          if (profile == null) {
+            profile = AppUser(
+              id: uid,
+              email: normalized,
+              displayName: cred.user?.displayName?.isNotEmpty == true
+                  ? cred.user!.displayName!
+                  : normalized.split('@').first,
+              createdAt: DateTime.now(),
+              lastActiveDate: DateTime.now().toIso8601String().substring(0, 10),
+            );
+            await userRepository!.saveUserProfile(profile);
+          }
+          currentUser = profile;
+          await refreshAllData();
+          notifyListeners();
+          return null;
+        }
+      } catch (fbError) {
+        debugPrint('Firebase login check: $fbError');
+      }
+    }
+
     try {
       final res = await apiClient.post<Map<String, dynamic>>('/auth/login', data: {
         'email': normalized,
@@ -139,6 +211,29 @@ class AppController extends ChangeNotifier {
     if (!normalized.contains('@')) return 'Email không hợp lệ.';
     if (password.length < 6) return 'Mật khẩu cần ít nhất 6 ký tự.';
 
+    if (authRepository != null && userRepository != null) {
+      try {
+        final cred = await authRepository!.signUp(normalized, password);
+        final uid = cred.user?.uid;
+        if (uid != null) {
+          final newUser = AppUser(
+            id: uid,
+            email: normalized,
+            displayName: trimmedName,
+            createdAt: DateTime.now(),
+            lastActiveDate: DateTime.now().toIso8601String().substring(0, 10),
+          );
+          await userRepository!.saveUserProfile(newUser);
+          currentUser = newUser;
+          await refreshAllData();
+          notifyListeners();
+          return null;
+        }
+      } catch (fbError) {
+        debugPrint('Firebase register check: $fbError');
+      }
+    }
+
     try {
       final res = await apiClient.post<Map<String, dynamic>>('/auth/register', data: {
         'displayName': trimmedName,
@@ -160,6 +255,9 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    try {
+      await authRepository?.signOut();
+    } catch (_) {}
     await apiClient.clearToken();
     handleUnauthorized();
   }

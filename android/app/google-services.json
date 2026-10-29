@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "556017018427",
+    "firebase_url": "https://flutter-firebase-6b5af-default-rtdb.firebaseio.com",
+    "project_id": "flutter-firebase-6b5af",
+    "storage_bucket": "flutter-firebase-6b5af.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:556017018427:android:85d0380ade7ded6ed89e1e",
+        "android_client_info": {
+          "package_name": "com.example.test_flutter_firebase"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAF8ZGhfD1o_UF2Oiv3XiC3UK3JKisAxNM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:556017018427:android:0f315a9be6ceba94d89e1e",
+        "android_client_info": {
+          "package_name": "com.lifequest.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAF8ZGhfD1o_UF2Oiv3XiC3UK3JKisAxNM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
