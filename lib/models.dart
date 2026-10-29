@@ -567,3 +567,44 @@ class SafetyReport {
     createdAt: DateTime.parse(json['createdAt'] as String),
   );
 }
+
+class GroupChatMessage {
+  const GroupChatMessage({
+    required this.id,
+    required this.groupId,
+    required this.senderId,
+    required this.senderName,
+    required this.content,
+    required this.createdAt,
+    this.isSelf = false,
+  });
+
+  final String id;
+  final String groupId;
+  final String senderId;
+  final String senderName;
+  final String content;
+  final DateTime createdAt;
+  final bool isSelf;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'groupId': groupId,
+    'senderId': senderId,
+    'senderName': senderName,
+    'content': content,
+    'createdAt': createdAt.toIso8601String(),
+    'isSelf': isSelf,
+  };
+
+  factory GroupChatMessage.fromJson(Map<String, dynamic> json) =>
+      GroupChatMessage(
+        id: json['id'] as String,
+        groupId: json['groupId'] as String,
+        senderId: json['senderId'] as String,
+        senderName: json['senderName'] as String,
+        content: json['content'] as String,
+        createdAt: DateTime.parse(json['createdAt'] as String),
+        isSelf: json['isSelf'] as bool? ?? false,
+      );
+}

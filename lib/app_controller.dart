@@ -530,6 +530,47 @@ class AppController extends ChangeNotifier {
     return apiClient.subscribeGroupEvents(groupId);
   }
 
+  // ------------------ Group Chat ------------------
+
+  final Map<String, List<GroupChatMessage>> _groupMessages = {};
+
+  List<GroupChatMessage> getGroupMessages(String groupId) {
+    if (!_groupMessages.containsKey(groupId)) {
+      _groupMessages[groupId] = [
+        GroupChatMessage(
+          id: 'welcome-$groupId',
+          groupId: groupId,
+          senderId: 'system',
+          senderName: 'LifeQuest Bot',
+          content:
+              'Chào mừng các thành viên đến với không gian nhóm! Hãy cùng nhau rủ bạn bè đi chơi thể thao, học tập và rèn luyện thói quen tốt 🏸🏃💻',
+          createdAt: DateTime.now().subtract(const Duration(hours: 1)),
+          isSelf: false,
+        ),
+      ];
+    }
+    return _groupMessages[groupId]!;
+  }
+
+  void sendGroupMessage(String groupId, String content) {
+    final trimmed = content.trim();
+    if (trimmed.isEmpty) return;
+
+    final user = currentUser;
+    final msg = GroupChatMessage(
+      id: 'msg-${DateTime.now().millisecondsSinceEpoch}',
+      groupId: groupId,
+      senderId: user?.id ?? 'me',
+      senderName: user?.displayName ?? 'Tôi',
+      content: trimmed,
+      createdAt: DateTime.now(),
+      isSelf: true,
+    );
+
+    getGroupMessages(groupId).add(msg);
+    notifyListeners();
+  }
+
   // ------------------ AI ------------------
 
   Future<AiQuestDraft> generateAiPlan(

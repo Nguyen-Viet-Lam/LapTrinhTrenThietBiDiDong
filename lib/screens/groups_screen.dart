@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../api/api_client.dart';
 import '../api/api_exception.dart';
@@ -346,6 +347,68 @@ class GroupDetailSheet extends ConsumerStatefulWidget {
 class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
   StreamSubscription<GroupEvent>? _sseSub;
   bool isConnected = false;
+  int _currentTab = 0; // 0: Nhiệm vụ & Thành viên, 1: Thảo luận nhóm
+  final TextEditingController _chatController = TextEditingController();
+
+  void _showInviteFriendDialog(BuildContext context, QuestGroup group) {
+    final inviteText =
+        'Mình đang rủ đi hoạt động cùng nhóm "${group.name}" trên LifeQuest! Nhập mã mời để tham gia cùng nhé: ${group.inviteCode ?? ""}';
+
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.person_add_alt_1, color: Color(0xFF0284C7)),
+            SizedBox(width: 8),
+            Text('Mời bạn bè'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Rủ bạn bè cùng tham gia nhóm "${group.name}" để rèn luyện thói quen và đi chơi ngoài đời thực.',
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                inviteText,
+                style: const TextStyle(fontSize: 12.5, fontStyle: FontStyle.italic),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Đóng'),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: inviteText));
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Đã sao chép lời mời! Bạn có thể dán để gửi qua Zalo/Messenger.'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            icon: const Icon(Icons.copy, size: 16),
+            label: const Text('Sao chép lời mời'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -379,6 +442,7 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
 
   @override
   void dispose() {
+    _chatController.dispose();
     _sseSub?.cancel();
     super.dispose();
   }
@@ -454,7 +518,177 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
             ),
             const SizedBox(height: 4),
             Text(group.description),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
+            SegmentedButton<int>(
+              segments: const [
+                ButtonSegment(
+                  value: 0,
+                  icon: Icon(Icons.checklist_rtl),
+                  label: Text('Nhiệm vụ & Đội ngũ'),
+                ),
+                ButtonSegment(
+                  value: 1,
+                  icon: Icon(Icons.chat_bubble_outline),
+                  label: Text('💬 Thảo luận nhóm'),
+                ),
+              ],
+              selected: {_currentTab},
+              onSelectionChanged: (set) => setState(() => _currentTab = set.first),
+            ),
+            const SizedBox(height: 14),
+            if (_currentTab == 1) ...[
+              // ================= TAB 1: GROUP CHAT =================
+              ...controller.getGroupMessages(group.id).map((msg) {
+                final isSelf = msg.isSelf;
+                final isSystem = msg.senderId == 'system';
+
+                if (isSystem) {
+                  return Container(
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      msg.content,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  );
+                }
+
+                return Align(
+                  alignment: isSelf ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.sizeOf(context).width * 0.75,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelf
+                          ? Theme.of(context).colorScheme.primaryContainer
+                          : Theme.of(context).colorScheme.surfaceContainerHigh,
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(16),
+                        topRight: const Radius.circular(16),
+                        bottomLeft: Radius.circular(isSelf ? 16 : 4),
+                        bottomRight: Radius.circular(isSelf ? 4 : 16),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment:
+                          isSelf ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                      children: [
+                        if (!isSelf)
+                          Text(
+                            msg.senderName,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF0284C7),
+                            ),
+                          ),
+                        Text(
+                          msg.content,
+                          style: const TextStyle(fontSize: 13.5),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          DateFormat('HH:mm').format(msg.createdAt),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 12),
+              // Quick reply chips
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  ActionChip(
+                    avatar: const Icon(Icons.sports_tennis, size: 14),
+                    label: const Text('🏸 Cầu lông chiều nay?'),
+                    onPressed: () {
+                      controller.sendGroupMessage(
+                        group.id,
+                        'Chiều nay ai rảnh đi đánh cầu lông đôi không mọi người? 🏸',
+                      );
+                    },
+                  ),
+                  ActionChip(
+                    avatar: const Icon(Icons.directions_run, size: 14),
+                    label: const Text('🏃 Sáng mai chạy bộ nhé!'),
+                    onPressed: () {
+                      controller.sendGroupMessage(
+                        group.id,
+                        'Sáng mai 6h tập trung chạy bộ công viên rèn thể lực nhé cả nhóm! 🏃',
+                      );
+                    },
+                  ),
+                  ActionChip(
+                    avatar: const Icon(Icons.laptop_chromebook, size: 14),
+                    label: const Text('💻 Cày đồ án di động'),
+                    onPressed: () {
+                      controller.sendGroupMessage(
+                        group.id,
+                        'Tối nay cày tiếp đồ án môn Lập trình thiết bị di động nhé ae! 💻',
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              // Message Input Box
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _chatController,
+                      decoration: const InputDecoration(
+                        hintText: 'Nhắn tin cho nhóm...',
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      ),
+                      onSubmitted: (text) {
+                        if (text.trim().isNotEmpty) {
+                          controller.sendGroupMessage(group.id, text);
+                          _chatController.clear();
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    onPressed: () {
+                      if (_chatController.text.trim().isNotEmpty) {
+                        controller.sendGroupMessage(group.id, _chatController.text);
+                        _chatController.clear();
+                      }
+                    },
+                    icon: const Icon(Icons.send, size: 18),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+            ] else ...[
+              // ================= TAB 0: QUESTS & MEMBERS =================
+              if (group.inviteCode != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: OutlinedButton.icon(
+                    onPressed: () => _showInviteFriendDialog(context, group),
+                    icon: const Icon(Icons.person_add_alt_1),
+                    label: const Text('Mời bạn bè cùng đi chơi'),
+                  ),
+                ),
             if (isOwner && group.inviteCode != null)
               Container(
                 margin: const EdgeInsets.symmetric(vertical: 6),
@@ -811,6 +1045,7 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
                 icon: const Icon(Icons.delete_outline),
                 label: const Text('Giải tán nhóm'),
               ),
+            ],
           ],
         ),
       ),
