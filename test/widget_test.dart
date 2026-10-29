@@ -16,7 +16,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('Chào mừng trở lại'), findsOneWidget);
-    expect(find.text('demo@lifequest.vn'), findsOneWidget);
+    expect(find.text('lam@lifequest.vn'), findsOneWidget);
     expect(find.text('Đăng nhập'), findsOneWidget);
   });
 }

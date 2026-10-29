@@ -80,6 +80,7 @@ export function createApp({db = openDb(), jwtSecret = process.env.JWT_SECRET ?? 
     longestStreak: u.longest_streak, lastActiveDate: u.last_active_date, onboardingCompleted: !!u.onboarding_completed,
     interests: JSON.parse(u.interests), notificationsEnabled: !!u.notifications_enabled, darkMode: !!u.dark_mode,
     badges: badges(u), createdAt: u.created_at,
+    role: (u.email === 'lam@lifequest.vn' || u.email.includes('admin')) ? 'admin' : 'user',
   });
   const questDto = (q) => {
     const steps = all('SELECT id,title,is_done FROM quest_steps WHERE quest_id=? ORDER BY position', q.id)

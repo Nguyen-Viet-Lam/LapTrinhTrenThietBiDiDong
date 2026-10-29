@@ -4,12 +4,30 @@ import 'package:intl/intl.dart';
 
 import '../app_controller.dart';
 
-class NotificationsSheet extends ConsumerWidget {
+class NotificationsSheet extends ConsumerStatefulWidget {
   const NotificationsSheet({super.key});
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotificationsSheet> createState() => _NotificationsSheetState();
+}
+
+class _NotificationsSheetState extends ConsumerState<NotificationsSheet> {
+  bool refreshing = false;
+
+  Future<void> refresh() async {
+    setState(() => refreshing = true);
+    try {
+      await ref.read(appControllerProvider).fetchNotifications();
+    } finally {
+      if (mounted) setState(() => refreshing = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final controller = ref.watch(appControllerProvider);
     final items = controller.myNotifications;
+
     return SafeArea(
       child: SizedBox(
         height: MediaQuery.sizeOf(context).height * .72,
@@ -24,9 +42,20 @@ class NotificationsSheet extends ConsumerWidget {
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const Spacer(),
-                  TextButton(
-                    onPressed: controller.markNotificationsRead,
-                    child: const Text('Đánh dấu đã đọc'),
+                  if (items.any((n) => !n.isRead))
+                    TextButton(
+                      onPressed: controller.markNotificationsRead,
+                      child: const Text('Đánh dấu đã đọc'),
+                    ),
+                  IconButton(
+                    tooltip: 'Làm mới',
+                    onPressed: refreshing ? null : refresh,
+                    icon: refreshing
+                        ? const SizedBox.square(
+                            dimension: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.refresh),
                   ),
                 ],
               ),
@@ -55,7 +84,7 @@ class NotificationsSheet extends ConsumerWidget {
                             ),
                           ),
                           subtitle: Text(
-                            '${item.body}\n${DateFormat('dd/MM/yyyy HH:mm').format(item.createdAt)}',
+                            '${item.body}\n${DateFormat('dd/MM/yyyy HH:mm').format(item.createdAt.toLocal())}',
                           ),
                           isThreeLine: true,
                         );

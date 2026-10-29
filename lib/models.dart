@@ -1,3 +1,5 @@
+import 'dart:math';
+
 enum QuestDifficulty { easy, medium, hard }
 
 enum QuestStatus { active, completed, archived }
@@ -24,6 +26,30 @@ class QuestStep {
   );
 }
 
+class UserBadge {
+  const UserBadge({
+    required this.id,
+    required this.name,
+    required this.description,
+  });
+
+  final String id;
+  final String name;
+  final String description;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'description': description,
+  };
+
+  factory UserBadge.fromJson(Map<String, dynamic> json) => UserBadge(
+    id: json['id'] as String,
+    name: json['name'] as String? ?? '',
+    description: json['description'] as String? ?? '',
+  );
+}
+
 class Quest {
   const Quest({
     required this.id,
@@ -36,6 +62,7 @@ class Quest {
     required this.steps,
     required this.createdAt,
     this.dueAt,
+    this.completedAt,
     this.groupId,
     this.assigneeId,
     this.createdByAi = false,
@@ -53,6 +80,7 @@ class Quest {
   final List<QuestStep> steps;
   final DateTime createdAt;
   final DateTime? dueAt;
+  final DateTime? completedAt;
   final String? groupId;
   final String? assigneeId;
   final bool createdByAi;
@@ -60,7 +88,7 @@ class Quest {
   final bool xpAwarded;
 
   double get progress => steps.isEmpty
-      ? (status == QuestStatus.completed ? 1 : 0)
+      ? (status == QuestStatus.completed ? 1.0 : 0.0)
       : steps.where((step) => step.isDone).length / steps.length;
 
   Quest copyWith({
@@ -71,6 +99,7 @@ class Quest {
     QuestStatus? status,
     List<QuestStep>? steps,
     DateTime? dueAt,
+    DateTime? completedAt,
     String? groupId,
     String? assigneeId,
     bool? createdByAi,
@@ -87,6 +116,7 @@ class Quest {
     steps: steps ?? this.steps,
     createdAt: createdAt,
     dueAt: dueAt ?? this.dueAt,
+    completedAt: completedAt ?? this.completedAt,
     groupId: groupId ?? this.groupId,
     assigneeId: assigneeId ?? this.assigneeId,
     createdByAi: createdByAi ?? this.createdByAi,
@@ -105,6 +135,7 @@ class Quest {
     'steps': steps.map((step) => step.toJson()).toList(),
     'createdAt': createdAt.toIso8601String(),
     'dueAt': dueAt?.toIso8601String(),
+    'completedAt': completedAt?.toIso8601String(),
     'groupId': groupId,
     'assigneeId': assigneeId,
     'createdByAi': createdByAi,
@@ -127,6 +158,9 @@ class Quest {
     dueAt: json['dueAt'] == null
         ? null
         : DateTime.parse(json['dueAt'] as String),
+    completedAt: json['completedAt'] == null
+        ? null
+        : DateTime.parse(json['completedAt'] as String),
     groupId: json['groupId'] as String?,
     assigneeId: json['assigneeId'] as String?,
     createdByAi: json['createdByAi'] as bool? ?? false,
@@ -140,7 +174,6 @@ class AppUser {
     required this.id,
     required this.email,
     required this.displayName,
-    required this.password,
     this.xp = 0,
     this.streak = 0,
     this.longestStreak = 0,
@@ -149,12 +182,14 @@ class AppUser {
     this.interests = const [],
     this.notificationsEnabled = true,
     this.darkMode = false,
+    this.badges = const [],
+    this.createdAt,
+    this.role = 'user',
   });
 
   final String id;
   final String email;
   final String displayName;
-  final String password;
   final int xp;
   final int streak;
   final int longestStreak;
@@ -163,8 +198,12 @@ class AppUser {
   final List<String> interests;
   final bool notificationsEnabled;
   final bool darkMode;
+  final List<UserBadge> badges;
+  final DateTime? createdAt;
+  final String role;
 
   int get level => levelForXp(xp);
+  bool get isAdmin => role == 'admin' || email == 'lam@lifequest.vn' || email.contains('admin');
 
   AppUser copyWith({
     String? displayName,
@@ -176,11 +215,12 @@ class AppUser {
     List<String>? interests,
     bool? notificationsEnabled,
     bool? darkMode,
+    List<UserBadge>? badges,
+    String? role,
   }) => AppUser(
     id: id,
     email: email,
     displayName: displayName ?? this.displayName,
-    password: password,
     xp: xp ?? this.xp,
     streak: streak ?? this.streak,
     longestStreak: longestStreak ?? this.longestStreak,
@@ -189,13 +229,15 @@ class AppUser {
     interests: interests ?? this.interests,
     notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
     darkMode: darkMode ?? this.darkMode,
+    badges: badges ?? this.badges,
+    createdAt: createdAt,
+    role: role ?? this.role,
   );
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'email': email,
     'displayName': displayName,
-    'password': password,
     'xp': xp,
     'streak': streak,
     'longestStreak': longestStreak,
@@ -204,13 +246,15 @@ class AppUser {
     'interests': interests,
     'notificationsEnabled': notificationsEnabled,
     'darkMode': darkMode,
+    'badges': badges.map((b) => b.toJson()).toList(),
+    'createdAt': createdAt?.toIso8601String(),
+    'role': role,
   };
 
   factory AppUser.fromJson(Map<String, dynamic> json) => AppUser(
     id: json['id'] as String,
     email: json['email'] as String,
     displayName: json['displayName'] as String,
-    password: json['password'] as String,
     xp: json['xp'] as int? ?? 0,
     streak: json['streak'] as int? ?? 0,
     longestStreak: json['longestStreak'] as int? ?? 0,
@@ -219,15 +263,54 @@ class AppUser {
     interests: List<String>.from(json['interests'] as List<dynamic>? ?? []),
     notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
     darkMode: json['darkMode'] as bool? ?? false,
+    badges: (json['badges'] as List<dynamic>? ?? [])
+        .map((item) => UserBadge.fromJson(item as Map<String, dynamic>))
+        .toList(),
+    createdAt: json['createdAt'] == null
+        ? null
+        : DateTime.parse(json['createdAt'] as String),
+    role: json['role'] as String? ??
+        (json['email'] == 'lam@lifequest.vn' || json['email'] == 'demo@lifequest.vn' || (json['email']?.toString().contains('admin') ?? false)
+            ? 'admin'
+            : 'user'),
   );
 }
 
 int levelForXp(int xp) {
-  var level = 1;
-  while (xp >= level * level * 100) {
-    level++;
-  }
-  return level;
+  if (xp <= 0) return 1;
+  return (sqrt(xp / 100)).floor() + 1;
+}
+
+class GroupMember {
+  const GroupMember({
+    required this.id,
+    required this.displayName,
+    required this.role,
+    this.joinedAt,
+  });
+
+  final String id;
+  final String displayName;
+  final String role; // 'owner' | 'member'
+  final DateTime? joinedAt;
+
+  bool get isOwner => role == 'owner';
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'displayName': displayName,
+    'role': role,
+    'joinedAt': joinedAt?.toIso8601String(),
+  };
+
+  factory GroupMember.fromJson(Map<String, dynamic> json) => GroupMember(
+    id: json['id'] as String,
+    displayName: json['displayName'] as String? ?? '',
+    role: json['role'] as String? ?? 'member',
+    joinedAt: json['joinedAt'] == null
+        ? null
+        : DateTime.parse(json['joinedAt'] as String),
+  );
 }
 
 class QuestGroup {
@@ -236,26 +319,34 @@ class QuestGroup {
     required this.name,
     required this.description,
     required this.ownerId,
-    required this.inviteCode,
-    required this.memberIds,
+    required this.members,
     required this.createdAt,
+    this.inviteCode,
   });
 
   final String id;
   final String name;
   final String description;
   final String ownerId;
-  final String inviteCode;
-  final List<String> memberIds;
+  final String? inviteCode;
+  final List<GroupMember> members;
   final DateTime createdAt;
 
-  QuestGroup copyWith({List<String>? memberIds}) => QuestGroup(
+  List<String> get memberIds => members.map((m) => m.id).toList();
+
+  QuestGroup copyWith({
+    String? name,
+    String? description,
+    String? ownerId,
+    String? inviteCode,
+    List<GroupMember>? members,
+  }) => QuestGroup(
     id: id,
-    name: name,
-    description: description,
-    ownerId: ownerId,
-    inviteCode: inviteCode,
-    memberIds: memberIds ?? this.memberIds,
+    name: name ?? this.name,
+    description: description ?? this.description,
+    ownerId: ownerId ?? this.ownerId,
+    inviteCode: inviteCode ?? this.inviteCode,
+    members: members ?? this.members,
     createdAt: createdAt,
   );
 
@@ -265,7 +356,7 @@ class QuestGroup {
     'description': description,
     'ownerId': ownerId,
     'inviteCode': inviteCode,
-    'memberIds': memberIds,
+    'members': members.map((m) => m.toJson()).toList(),
     'createdAt': createdAt.toIso8601String(),
   };
 
@@ -274,24 +365,108 @@ class QuestGroup {
     name: json['name'] as String,
     description: json['description'] as String? ?? '',
     ownerId: json['ownerId'] as String,
-    inviteCode: json['inviteCode'] as String,
-    memberIds: List<String>.from(json['memberIds'] as List<dynamic>),
+    inviteCode: json['inviteCode'] as String?,
+    members: (json['members'] as List<dynamic>? ?? [])
+        .map((item) => GroupMember.fromJson(item as Map<String, dynamic>))
+        .toList(),
     createdAt: DateTime.parse(json['createdAt'] as String),
+  );
+}
+
+class UserStats {
+  const UserStats({
+    required this.xp,
+    required this.level,
+    required this.xpToNextLevel,
+    required this.streak,
+    required this.active,
+    required this.completed,
+    required this.archived,
+    this.badges = const [],
+  });
+
+  final int xp;
+  final int level;
+  final int xpToNextLevel;
+  final int streak;
+  final int active;
+  final int completed;
+  final int archived;
+  final List<UserBadge> badges;
+
+  factory UserStats.fromJson(Map<String, dynamic> json) => UserStats(
+    xp: json['xp'] as int? ?? 0,
+    level: json['level'] as int? ?? 1,
+    xpToNextLevel: json['xpToNextLevel'] as int? ?? 100,
+    streak: json['streak'] as int? ?? 0,
+    active: json['active'] as int? ?? 0,
+    completed: json['completed'] as int? ?? 0,
+    archived: json['archived'] as int? ?? 0,
+    badges: (json['badges'] as List<dynamic>? ?? [])
+        .map((b) => UserBadge.fromJson(b as Map<String, dynamic>))
+        .toList(),
+  );
+}
+
+class BlockedUser {
+  const BlockedUser({required this.id, required this.displayName});
+
+  final String id;
+  final String displayName;
+
+  factory BlockedUser.fromJson(Map<String, dynamic> json) => BlockedUser(
+    id: json['id'] as String,
+    displayName: json['displayName'] as String? ?? '',
+  );
+}
+
+class AiQuestDraft {
+  const AiQuestDraft({
+    required this.title,
+    required this.description,
+    required this.category,
+    required this.difficulty,
+    required this.estimatedMinutes,
+    required this.steps,
+    required this.safetyNote,
+    required this.source,
+  });
+
+  final String title;
+  final String description;
+  final String category;
+  final QuestDifficulty difficulty;
+  final int estimatedMinutes;
+  final List<String> steps;
+  final String safetyNote;
+  final String source;
+
+  factory AiQuestDraft.fromJson(Map<String, dynamic> json) => AiQuestDraft(
+    title: json['title'] as String? ?? '',
+    description: json['description'] as String? ?? '',
+    category: json['category'] as String? ?? 'Khác',
+    difficulty: QuestDifficulty.values.byName(
+      json['difficulty'] as String? ?? 'easy',
+    ),
+    estimatedMinutes: json['estimatedMinutes'] as int? ?? 15,
+    steps: List<String>.from(json['steps'] as List<dynamic>? ?? []),
+    safetyNote: json['safetyNote'] as String? ?? '',
+    source: json['source'] as String? ?? 'mock',
   );
 }
 
 class AppNotification {
   const AppNotification({
     required this.id,
-    required this.userId,
     required this.title,
     required this.body,
     required this.createdAt,
+    this.userId,
     this.isRead = false,
   });
 
   final String id;
-  final String userId;
+  final String? userId;
   final String title;
   final String body;
   final DateTime createdAt;
@@ -318,7 +493,7 @@ class AppNotification {
   factory AppNotification.fromJson(Map<String, dynamic> json) =>
       AppNotification(
         id: json['id'] as String,
-        userId: json['userId'] as String,
+        userId: json['userId'] as String?,
         title: json['title'] as String,
         body: json['body'] as String,
         createdAt: DateTime.parse(json['createdAt'] as String),
@@ -329,15 +504,15 @@ class AppNotification {
 class SafetyReport {
   const SafetyReport({
     required this.id,
-    required this.reporterId,
     required this.targetType,
     required this.targetId,
     required this.reason,
     required this.createdAt,
+    this.reporterId,
   });
 
   final String id;
-  final String reporterId;
+  final String? reporterId;
   final String targetType;
   final String targetId;
   final String reason;
@@ -354,7 +529,7 @@ class SafetyReport {
 
   factory SafetyReport.fromJson(Map<String, dynamic> json) => SafetyReport(
     id: json['id'] as String,
-    reporterId: json['reporterId'] as String,
+    reporterId: json['reporterId'] as String?,
     targetType: json['targetType'] as String,
     targetId: json['targetId'] as String,
     reason: json['reason'] as String,

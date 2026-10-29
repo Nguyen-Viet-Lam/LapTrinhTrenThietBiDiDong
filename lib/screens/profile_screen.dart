@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../api/api_exception.dart';
 import '../app_controller.dart';
+import '../models.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -9,7 +11,11 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = ref.watch(appControllerProvider);
-    final user = controller.currentUser!;
+    final user = controller.currentUser;
+    if (user == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
       children: [
@@ -19,7 +25,9 @@ class ProfileScreen extends ConsumerWidget {
               CircleAvatar(
                 radius: 44,
                 child: Text(
-                  user.displayName.substring(0, 1).toUpperCase(),
+                  user.displayName.isNotEmpty
+                      ? user.displayName.substring(0, 1).toUpperCase()
+                      : 'U',
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
               ),
@@ -32,7 +40,7 @@ class ProfileScreen extends ConsumerWidget {
               const SizedBox(height: 6),
               Chip(
                 avatar: const Icon(Icons.stars, size: 18),
-                label: Text('Cấp ${user.level} • ${user.xp} XP'),
+                label: Text('Cấp ${user.level} • ${user.xp} XP • Chuỗi ${user.streak} ngày'),
               ),
             ],
           ),
@@ -65,8 +73,37 @@ class ProfileScreen extends ConsumerWidget {
               ListTile(
                 leading: const Icon(Icons.emoji_events_outlined),
                 title: const Text('Huy hiệu'),
-                subtitle: Text(_badges(user.xp, user.streak)),
+                subtitle: Text(
+                  user.badges.isEmpty
+                      ? 'Chưa mở khóa huy hiệu'
+                      : user.badges.map((b) => b.name).join(' • '),
+                ),
                 trailing: const Icon(Icons.chevron_right),
+                onTap: () => _showBadges(context, user.badges),
+              ),
+              ListTile(
+                leading: const Icon(Icons.lock_reset),
+                title: const Text('Đổi mật khẩu'),
+                subtitle: const Text('Cập nhật mật khẩu tài khoản'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  showDragHandle: true,
+                  builder: (_) => const ChangePasswordSheet(),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.block),
+                title: const Text('Tài khoản đã chặn'),
+                subtitle: Text('${controller.blockedUsers.length} tài khoản'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  isScrollControlled: true,
+                  showDragHandle: true,
+                  builder: (_) => const BlockedUsersSheet(),
+                ),
               ),
               ListTile(
                 leading: const Icon(Icons.shield_outlined),
@@ -79,11 +116,6 @@ class ProfileScreen extends ConsumerWidget {
                   showDragHandle: true,
                   builder: (_) => const SafetyCenterSheet(),
                 ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.block),
-                title: const Text('Tài khoản đã chặn'),
-                subtitle: Text('${controller.blockedUserIds.length} tài khoản'),
               ),
               const ListTile(
                 leading: Icon(Icons.info_outline),
@@ -102,10 +134,6 @@ class ProfileScreen extends ConsumerWidget {
           label: const Text('Đăng xuất'),
         ),
         TextButton(
-          onPressed: () => _confirmReset(context, controller),
-          child: const Text('Khôi phục dữ liệu demo'),
-        ),
-        TextButton(
           style: TextButton.styleFrom(
             foregroundColor: Theme.of(context).colorScheme.error,
           ),
@@ -116,38 +144,45 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  String _badges(int xp, int streak) {
-    final result = <String>[];
-    if (xp >= 20) result.add('Bước đầu tiên');
-    if (streak >= 3) result.add('Chuỗi 3 ngày');
-    if (streak >= 7) result.add('Bền bỉ 7 ngày');
-    return result.isEmpty ? 'Chưa mở khóa huy hiệu' : result.join(' • ');
-  }
-
-  Future<void> _confirmReset(
-    BuildContext context,
-    AppController controller,
-  ) async {
-    final accepted = await showDialog<bool>(
+  void _showBadges(BuildContext context, List<UserBadge> badges) {
+    showModalBottomSheet<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Khôi phục dữ liệu demo?'),
-        content: const Text(
-          'Toàn bộ thay đổi cục bộ sẽ được thay bằng dữ liệu mẫu.',
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Huy hiệu của bạn (${badges.length})',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 12),
+              if (badges.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: Text('Chưa mở khóa huy hiệu nào. Hãy hoàn thành quest nhé!'),
+                  ),
+                )
+              else
+                ...badges.map(
+                  (b) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const CircleAvatar(
+                      child: Icon(Icons.emoji_events, color: Colors.amber),
+                    ),
+                    title: Text(b.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text(b.description),
+                  ),
+                ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Khôi phục'),
-          ),
-        ],
       ),
     );
-    if (accepted == true) await controller.resetDemoData();
   }
 
   Future<void> _confirmDelete(
@@ -159,7 +194,7 @@ class ProfileScreen extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Xóa tài khoản?'),
         content: const Text(
-          'Quest cá nhân và dữ liệu thông báo sẽ bị xóa. Thao tác này không thể hoàn tác.',
+          'Toàn bộ quest cá nhân và dữ liệu tài khoản sẽ bị xóa hoàn toàn khỏi máy chủ. Thao tác này không thể hoàn tác.',
         ),
         actions: [
           TextButton(
@@ -171,12 +206,221 @@ class ProfileScreen extends ConsumerWidget {
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Xóa'),
+            child: const Text('Xóa vĩnh viễn'),
           ),
         ],
       ),
     );
-    if (accepted == true) await controller.deleteAccount();
+    if (accepted == true) {
+      await controller.deleteAccount();
+    }
+  }
+}
+
+class ChangePasswordSheet extends ConsumerStatefulWidget {
+  const ChangePasswordSheet({super.key});
+
+  @override
+  ConsumerState<ChangePasswordSheet> createState() => _ChangePasswordSheetState();
+}
+
+class _ChangePasswordSheetState extends ConsumerState<ChangePasswordSheet> {
+  final currentPassword = TextEditingController();
+  final newPassword = TextEditingController();
+  final confirmPassword = TextEditingController();
+  bool saving = false;
+  String? error;
+
+  @override
+  void dispose() {
+    currentPassword.dispose();
+    newPassword.dispose();
+    confirmPassword.dispose();
+    super.dispose();
+  }
+
+  Future<void> submit() async {
+    final curr = currentPassword.text;
+    final next = newPassword.text;
+    final conf = confirmPassword.text;
+
+    if (curr.isEmpty) {
+      setState(() => error = 'Vui lòng nhập mật khẩu hiện tại.');
+      return;
+    }
+    if (next.length < 6) {
+      setState(() => error = 'Mật khẩu mới cần ít nhất 6 ký tự.');
+      return;
+    }
+    if (next != conf) {
+      setState(() => error = 'Xác nhận mật khẩu mới không khớp.');
+      return;
+    }
+
+    setState(() {
+      saving = true;
+      error = null;
+    });
+
+    try {
+      await ref.read(appControllerProvider).changePassword(curr, next);
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đổi mật khẩu thành công!')),
+        );
+      }
+    } on ApiException catch (e) {
+      if (mounted) setState(() => error = e.message);
+    } catch (_) {
+      if (mounted) setState(() => error = 'Không thể đổi mật khẩu lúc này.');
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+    child: Padding(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        0,
+        20,
+        MediaQuery.viewInsetsOf(context).bottom + 20,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Đổi mật khẩu',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: currentPassword,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Mật khẩu hiện tại',
+                prefixIcon: Icon(Icons.lock_outline),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: newPassword,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Mật khẩu mới (tối thiểu 6 ký tự)',
+                prefixIcon: Icon(Icons.lock_reset),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: confirmPassword,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Xác nhận mật khẩu mới',
+                prefixIcon: Icon(Icons.lock_outline),
+              ),
+            ),
+            if (error != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  error!,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: saving ? null : submit,
+              child: Text(saving ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class BlockedUsersSheet extends ConsumerWidget {
+  const BlockedUsersSheet({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final controller = ref.watch(appControllerProvider);
+    final blocked = controller.blockedUsers;
+
+    return SafeArea(
+      child: SizedBox(
+        height: MediaQuery.sizeOf(context).height * .7,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Text(
+                    'Tài khoản đã chặn (${blocked.length})',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'Quest nhóm do những tài khoản này tạo sẽ bị ẩn khỏi danh sách của bạn.',
+                style: TextStyle(fontSize: 12),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: blocked.isEmpty
+                  ? const Center(child: Text('Bạn chưa chặn tài khoản nào.'))
+                  : ListView.builder(
+                      itemCount: blocked.length,
+                      itemBuilder: (context, index) {
+                        final item = blocked[index];
+                        return ListTile(
+                          leading: CircleAvatar(
+                            child: Text(
+                              item.displayName.isNotEmpty
+                                  ? item.displayName.substring(0, 1).toUpperCase()
+                                  : 'U',
+                            ),
+                          ),
+                          title: Text(item.displayName),
+                          trailing: FilledButton.tonal(
+                            onPressed: () async {
+                              await controller.unblockUser(item.id);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Đã bỏ chặn ${item.displayName}.'),
+                                  ),
+                                );
+                              }
+                            },
+                            child: const Text('Bỏ chặn'),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -257,6 +501,7 @@ class _SafetyItem extends StatelessWidget {
   final IconData icon;
   final String title;
   final String body;
+
   @override
   Widget build(BuildContext context) => Card(
     child: Padding(
