@@ -1,4 +1,4 @@
-# NỘI DUNG SLIDE THUYẾT TRÌNH CANVA (9 SLIDE CHUẨN ĐỒ ÁN)
+# NỘI DUNG SLIDE THUYẾT TRÌNH CANVA (10 SLIDE CHUẨN ĐỒ ÁN)
 **Học phần:** Lập trình trên thiết bị di động (ECMP177) – Trường ĐH Công nghệ TP.HCM (HUTECH)  
 **Đề tài:** LifeQuest – Ứng dụng nhiệm vụ Gamification tích hợp AI, phân quyền hệ thống và đồng bộ nhóm thời gian thực trên thiết bị di động  
 **Nhóm thực hiện:** Nhóm 10  
@@ -9,7 +9,7 @@
 ## SLIDE 1: TRANG TIÊU ĐỀ (TITLE SLIDE)
 * **Bố cục Canva:** Nền sáng tối giản, Logo HUTECH góc trái trên, tên đề tài in hoa đậm giữa trang, bên dưới là thông tin nhóm.
 * **Tiêu đề lớn:** `LIFEQUEST`
-* **Tiêu đề phụ:** Ứng dụng nhiệm vụ Gamification tích hợp AI, phân quyền hệ thống & đồng bộ nhóm thời gian thực trên thiết bị di động
+* **Tiêu đề phụ:** Ứng dụng nhiệm vụ Gamification tích hợp AI Thị giác, phân quyền hệ thống & đồng bộ nhóm thời gian thực trên thiết bị di động
 * **Thông tin học phần:**
   * Học phần: Lập trình trên thiết bị di động (ECMP177)
   * Giảng viên hướng dẫn: ThS. [Chèn tên Thầy]
@@ -30,11 +30,11 @@
 * **Cột trái - Thực trạng & Thách thức:**
   * Người trẻ và sinh viên dễ trì hoãn, nhanh mất động lực khi tự quản lý mục tiêu cá nhân hoặc bài tập nhóm.
   * Các ứng dụng To-Do truyền thống đơn điệu, dễ bị lãng quên sau 2 - 3 ngày.
-  * Khó khăn trong việc phối hợp và theo dõi tiến độ công việc giữa các thành viên trong nhóm.
+  * Khó khăn trong việc phối hợp, đi chơi thể thao và theo dõi tiến độ công việc giữa các thành viên trong nhóm.
 * **Cột phải - Giải pháp LifeQuest:**
   * **Gamification hóa đời sống:** Biến mục tiêu rèn luyện thành nhiệm vụ (Quest) có điểm thưởng XP, thăng cấp độ và chuỗi ngày Streak.
-  * **Trợ lý AI đồng hành:** Phân rã mục tiêu lớn thành các bước hành động cụ thể, có kiểm duyệt an toàn.
-  * **Không gian Nhóm thời gian thực (SSE):** Cộng tác minh bạch, giao việc và đồng bộ dữ liệu tức thời.
+  * **Trợ lý AI Thị giác (Vision AI):** Chụp ảnh bối cảnh ngoài đời thực (sân cầu lông, gym, góc học tập) tự động đề xuất nhiệm vụ cụ thể.
+  * **Không gian Nhóm thời gian thực (SSE & Chat):** Kênh thảo luận nhóm, tin nhắn mẫu rủ đi chơi và đồng bộ dữ liệu tức thời.
 * **Người trình bày:** Trần Ngọc Lợi
 * **Speaker Notes:**
   > *"Trong học tập và đời sống, rào cản lớn nhất của sinh viên không phải là không có mục tiêu, mà là thiếu động lực duy trì. LifeQuest ra đời để biến việc học và rèn luyện thói quen thành một trò chơi nhập vai thực tế, nơi mỗi hành động nhỏ hoàn thành đều đem lại điểm số và cấp độ cụ thể."*
@@ -44,7 +44,7 @@
 ## SLIDE 3: KIẾN TRÚC HỆ THỐNG & CÔNG NGHỆ SỬ DỤNG
 * **Bố cục Canva:** Sơ đồ khối 3 tầng phẳng (Client $\leftrightarrow$ REST API $\leftrightarrow$ Database & AI Service).
 * **Tầng 1 - Mobile App (Frontend):**
-  * Flutter 3.x / Dart (Material 3).
+  * Flutter 3.x / Dart (Material 3) với Design System v2 (AnimatedCounter, ProgressRing Neon 3D).
   * State Management: Riverpod 2.x.
   * Declarative Routing: GoRouter.
   * Thiết kế Responsive: Thích ứng màn hình Mobile (Drawer + Bottom Bar) và Desktop/Web (Left Sidebar).
@@ -54,17 +54,18 @@
   * Realtime: Server-Sent Events (SSE) đẩy sự kiện nhóm hai chiều nhẹ nhàng, tiết kiệm pin.
 * **Tầng 3 - Dữ liệu & AI:**
   * SQLite CSDL quan hệ chuẩn 9 bảng, migration `.sql` độc lập.
-  * Trí tuệ nhân tạo: Gemini API với cơ chế Mock dự phòng khi offline.
+  * Trí tuệ nhân tạo: Gemini API với cơ chế Vision Template dự phòng khi offline.
 * **Người trình bày:** Nguyễn Viết Lãm
 * **Speaker Notes:**
   > *"Về mặt kiến trúc, nhóm áp dụng mô hình phân tầng Client - Server hoàn chỉnh. Ứng dụng di động viết bằng Flutter kết nối với Backend REST API Node.js và CSDL SQLite có quản lý phiên bản migration. Chúng em sử dụng Server-Sent Events thay vì WebSocket để tối ưu hóa thời lượng pin trên thiết bị di động."*
 
 ---
 
-## SLIDE 4: GAMIFICATION & CƠ CHẾ IDEMPOTENT CHỐNG HACK ĐIỂM
+## SLIDE 4: GAMIFICATION V2 & CƠ CHẾ IDEMPOTENT CHỐNG HACK ĐIỂM
 * **Bố cục Canva:** Chèn ảnh chụp `docs/screenshots/home.png` và `docs/screenshots/quest-complete.png`, bên cạnh là công thức toán học và bảng độ khó.
 * **Nội dung trọng tâm:**
   * **Công thức toán học cấp độ:** $\text{Level} = \left\lfloor\sqrt{\frac{\text{XP}}{100}}\right\rfloor + 1$ (tạo độ khó tăng dần theo hàm bình phương).
+  * **Design System v2:** `AnimatedCounter` hiệu ứng số nhảy mượt mà khi tăng XP/Streak; `ProgressRing` Neon 3D hiển thị % thăng cấp.
   * **Phân cấp nhiệm vụ:** Dễ (20 XP) - Vừa (40 XP) - Khó (70 XP).
   * **Chuỗi ngày rèn luyện (Streak):** Tự động tăng khi hoàn thành nhiệm vụ trong ngày, bảo vệ tính kỷ luật.
 * **Điểm nhấn kỹ thuật - Cơ chế Idempotent Transaction:**
@@ -92,22 +93,36 @@
 
 ---
 
-## SLIDE 6: KHÔNG GIAN NHÓM & ĐỒNG BỘ THỜI GIAN THỰC (SSE)
-* **Bố cục Canva:** Chèn ảnh chụp `docs/screenshots/group-detail.png` và `docs/screenshots/group-realtime.png`, vẽ luồng kết nối 2 thiết bị.
-* **Cộng tác nhóm an toàn:**
-  * Khởi tạo nhóm học tập / rèn luyện thể thao.
-  * Cơ chế mã mời bảo mật: Mã mời được băm bằng thuật toán **SHA-256** lưu trong CSDL và có thời hạn tự hủy sau 7 ngày.
-* **Đồng bộ thời gian thực qua Server-Sent Events (SSE):**
-  * Thiết lập kết nối kênh đẩy sự kiện `GET /api/groups/:id/events`.
-  * Khi thành viên A tạo nhiệm vụ, tích checklist hoặc hoàn thành bài tập $\rightarrow$ Server lập tức phát sự kiện `quest.created` / `step.toggled`.
-  * Toàn bộ thiết bị của các thành viên khác tự động cập nhật ngay lập tức mà không cần bấm F5 hay kéo reload.
-* **Người trình bày:** Nguyễn Đại Kỳ
+## SLIDE 6: AI THỊ GIÁC (VISION QUEST) & ĐI CHƠI NGOÀI ĐỜI THỰC
+* **Bố cục Canva:** Khung ảnh bối cảnh (sân cầu lông, gym, góc học tập) kèm thẻ nhiệm vụ được sinh ra và nút Review-before-save.
+* **Trải nghiệm "Đi chơi ngoài đời thực":**
+  * Người dùng chụp ảnh hoặc chọn bối cảnh: Sân cầu lông 🏸, Sân bóng chuyền 🏐, Phòng Gym 💪, Góc học tập 💻, Công viên chạy bộ 🏃.
+  * AI thị giác phân tích bối cảnh và tự động sinh bản nháp nhiệm vụ kèm checklist các bước thực tế (khởi động, kỹ thuật, thi đấu, thả lỏng).
+  * Ảnh chụp được tự động đính kèm vào thẻ nhiệm vụ minh chứng.
+* **Mời bạn cùng tham gia:**
+  * Nút "Mời bạn bè" 1-chạm: Tự động tạo và sao chép lời mời kèm mã mời nhóm bảo mật để gửi qua Zalo/Messenger.
+* **Người trình bày:** Châu Tuấn & Nguyễn Đại Kỳ
 * **Speaker Notes:**
-  > *"Trong phần làm việc nhóm, chúng em giải quyết bài toán đồng bộ dữ liệu bằng Server-Sent Events. Khi thành viên A tích chọn một bước công việc trên điện thoại của mình, điện thoại của bạn B lập tức hiển thị bước đó đã hoàn thành theo thời gian thực mà không cần thao tác tải lại trang."*
+  > *"Một tính năng cực kỳ thú vị và thực tế của LifeQuest là AI Thị giác. Khi sinh viên đi chơi ngoài đường, chụp sân cầu lông hoặc phòng gym, AI sẽ nhận diện bối cảnh và đề xuất ngay một nhiệm vụ rèn luyện thể chất với các bước thực tế, kèm nút mời bạn bè cùng tham gia."*
 
 ---
 
-## SLIDE 7: BẢO MẬT ĐA LỚP & PHÂN QUYỀN ADMIN CHUYÊN BIỆT
+## SLIDE 7: KHÔNG GIAN NHÓM, THẢO LUẬN & ĐỒNG BỘ THỜI GIAN THỰC (SSE)
+* **Bố cục Canva:** Chèn ảnh chụp giao diện Thảo luận nhóm với bong bóng chat và badge Realtime SSE.
+* **Cộng tác nhóm an toàn:**
+  * Khởi tạo nhóm học tập / rèn luyện thể thao kèm mã mời bảo mật băm **SHA-256** tự hủy sau 7 ngày.
+* **Kênh Thảo luận nhóm (Group Chat):**
+  * Trò chuyện nhóm thời gian thực với bong bóng chat phân biệt màu sắc.
+  * **Quick Reply Chips:** Gợi ý câu rủ đi chơi 1-chạm (*"🏸 Cầu lông chiều nay?"*, *"🏃 Sáng mai chạy bộ nhé!"*, *"💻 Cày đồ án di động"*).
+* **Đồng bộ thời gian thực qua Server-Sent Events (SSE):**
+  * Endpoint `GET /api/groups/:id/events` phát sự kiện tức thời khi có quest mới hoặc tích checklist.
+* **Người trình bày:** Nguyễn Đại Kỳ
+* **Speaker Notes:**
+  > *"Trong phần làm việc nhóm, chúng em tích hợp cả kênh Thảo luận nhóm với các nút rủ bạn đi chơi 1-chạm và đồng bộ trạng thái thời gian thực bằng Server-Sent Events. Dữ liệu giữa các máy luôn được cập nhật đồng thời mà không cần reload."*
+
+---
+
+## SLIDE 8: BẢO MẬT ĐA LỚP & PHÂN QUYỀN ADMIN CHUYÊN BIỆT
 * **Bố cục Canva:** Bảng so sánh 2 phân quyền (Admin vs User) và ảnh chụp `docs/screenshots/admin_ocean_desktop.png`.
 * **Phân quyền hệ thống nghiêm ngặt (Strict RBAC):**
   * **Quản trị viên (Admin):** Giám sát biểu đồ hoạt động toàn hệ thống, quản lý danh sách người dùng, xử lý báo cáo vi phạm, khóa tài khoản vi phạm. Admin **không** làm nhiệm vụ to-do cá nhân.
@@ -122,24 +137,24 @@
 
 ---
 
-## SLIDE 8: KẾT QUẢ KIỂM THỬ THỰC TẾ (TESTING & VERIFICATION)
-* **Bố cục Canva:** 3 thẻ chỉ số lớn nổi bật màu xanh lá: `flutter analyze: 0 lỗi`, `flutter test: 14/14 PASS`, `backend test: 12/12 PASS`.
+## SLIDE 9: KẾT QUẢ KIỂM THỬ THỰC TẾ (TESTING & VERIFICATION)
+* **Bố cục Canva:** 3 thẻ chỉ số lớn nổi bật màu xanh lá: `flutter analyze: 0 lỗi`, `flutter test: 24/24 PASS`, `backend test: 12/12 PASS`.
 * **Minh chứng chất lượng mã nguồn:**
-  * **Kiểm tra tĩnh:** `flutter analyze` $\rightarrow$ Không có bất kỳ cảnh báo cú pháp hay lỗi lặp (No issues found).
-  * **Kiểm thử Unit & Widget Flutter:** 14/14 test cases ĐẠT 100% (kiểm tra Auth, Token 401, Gamification, Idempotency, AI moderation, Groups).
-  * **Kiểm thử tích hợp Backend REST API:** 12/12 test suites ĐẠT 100% (kiểm tra bảo mật brute-force 429, Transaction CSDL, Phân quyền, Lọc chặn, Realtime SSE).
+  * **Kiểm tra tĩnh:** `flutter analyze` $\rightarrow$ **0 cảnh báo, 0 lỗi (No issues found)**.
+  * **Kiểm thử Unit & Widget Flutter:** **24/24 test cases ĐẠT 100%** (kiểm tra Auth, Token 401, Gamification, Idempotency, AI Vision bối cảnh ảnh, AI moderation 422, Group Chat & Quick Chips, Nhóm mã mời, Design System v2 AnimatedCounter/ProgressRing).
+  * **Kiểm thử tích hợp Backend REST API:** **12/12 test suites ĐẠT 100%** (kiểm tra bảo mật brute-force 429, Transaction CSDL, Phân quyền, Lọc chặn, Realtime SSE).
   * Đã build thành công file cài đặt Android APK: `app-debug.apk`.
 * **Người trình bày:** Châu Tuấn & Nguyễn Viết Lãm
 * **Speaker Notes:**
-  > *"Để đảm bảo sản phẩm hoạt động hoàn toàn ổn định trước khi báo cáo, nhóm đã viết các bộ kiểm thử tự động toàn diện. Cả 14 bài test trên ứng dụng di động và 12 bài test tích hợp tại máy chủ backend đều vượt qua 100%, không xảy ra bất kỳ lỗi hồi quy nào."*
+  > *"Để đảm bảo sản phẩm hoạt động hoàn toàn ổn định trước khi báo cáo, nhóm đã viết các bộ kiểm thử tự động toàn diện. Cả 24 bài test trên ứng dụng di động và 12 bài test tích hợp tại máy chủ backend đều vượt qua 100%, không xảy ra bất kỳ lỗi hồi quy nào."*
 
 ---
 
-## SLIDE 9: TỔNG KẾT, HƯỚNG PHÁT TRIỂN & Q&A
+## SLIDE 10: TỔNG KẾT, HƯỚNG PHÁT TRIỂN & Q&A
 * **Bố cục Canva:** Bên trái tóm tắt kết quả; Bên phải là Mã QR mở ứng dụng Web Demo + Link GitHub công khai.
 * **Kết quả đạt được:**
   * Hoàn thành 100% các yêu cầu kỹ thuật của đồ án môn học Lập trình di động.
-  * Giao diện đạt chuẩn Tối giản (Minimalism), trải nghiệm mượt mà trên điện thoại.
+  * Giao diện đạt chuẩn Tối giản (Minimalism) kết hợp Design System v2 mượt mà.
   * Kiến trúc mở, khả năng mở rộng cao.
 * **Hướng phát triển tiếp theo:**
   * Triển khai Backend lên máy chủ đám mây (Render / Railway) với CSDL PostgreSQL.

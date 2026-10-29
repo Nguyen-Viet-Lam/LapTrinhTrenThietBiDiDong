@@ -115,8 +115,12 @@ title: "BÁO CÁO ĐỒ ÁN CUỐI KỲ"
 | 21 | Quản trị | Bảng điều khiển Admin giám sát số lượng user, quest, báo cáo | Quản trị viên | Hoàn thành | Hoàn thành |
 | 22 | Quản trị | Quản lý danh sách tài khoản, khóa hoặc hạn chế quyền truy cập | Quản trị viên | Hoàn thành | Hoàn thành |
 | 23 | Quản trị | Xem xét và xử lý các báo cáo vi phạm từ cộng đồng | Quản trị viên | Hoàn thành | Hoàn thành |
-| 24 | Thông báo | Push Notification đẩy qua hệ điều hành (FCM) | Tất cả | Chưa xây dựng | Chưa xây dựng |
-| 25 | Tài khoản | Đăng nhập bằng Google / Quên mật khẩu qua email SMTP | Tất cả | Chưa xây dựng | Chưa xây dựng |
+| 24 | AI Thị giác | Phân tích ảnh chụp bối cảnh thực tế (sân cầu lông, gym, góc học tập...) đề xuất nhiệm vụ | Người dùng | Hoàn thành | Hoàn thành |
+| 25 | Nhóm & CLB | Kênh Thảo luận nhóm (Group Chat) thời gian thực và tin nhắn mẫu rủ đi chơi | Thành viên nhóm | Hoàn thành | Hoàn thành |
+| 26 | Nhóm & CLB | Hộp thoại Mời bạn bè 1-chạm kèm mã truy cập bảo mật | Người dùng | Hoàn thành | Hoàn thành |
+| 27 | Trải nghiệm UI | Design System v2: AnimatedCounter (XP/Streak) và ProgressRing Neon 3D | Người dùng | Hoàn thành | Hoàn thành |
+| 28 | Thông báo | Push Notification đẩy qua hệ điều hành (FCM) | Tất cả | Chưa xây dựng | Chưa xây dựng |
+| 29 | Tài khoản | Đăng nhập bằng Google / Quên mật khẩu qua email SMTP | Tất cả | Chưa xây dựng | Chưa xây dựng |
 
 ---
 
@@ -221,6 +225,49 @@ Giao diện ứng dụng được xây dựng theo chuẩn Responsive Design:
 
 ---
 
+### Chức năng 11: Trợ lý AI Thị giác (Vision Quest) – Đề xuất nhiệm vụ từ ảnh chụp thực tế
+![Hình 14: Giao diện AI Thị giác nhận diện bối cảnh thực tế](docs/screenshots/ai-draft.png){width=42%}
+
+**Mô tả kết quả thực nghiệm:**  
+Nhằm mở rộng trải nghiệm "đi chơi ngoài đời thực", ứng dụng bổ sung tab **"📸 AI Thị giác"** bên cạnh chế độ lập kế hoạch bằng văn bản truyền thống. Người dùng có thể chụp hoặc lựa chọn các bối cảnh đời thường phổ biến:
+- 🏸 **Sân cầu lông:** AI đề xuất bài tập khởi động khớp, rèn luyện kỹ thuật di chuyển (footwork), đánh cầu bền và thi đấu set 21 điểm.
+- 🏐 **Sân bóng chuyền / bóng rổ:** AI gợi ý rèn luyện bước một, phối hợp đập bóng và thi đấu đối kháng.
+- 💪 **Phòng Gym / Thể hình:** AI chia nhỏ buổi tập với các bài tập phức hợp (Squat, Bench Press), bài bổ trợ và giãn cơ phục hồi.
+- 💻 **Góc học tập / Làm việc:** AI kích hoạt chu trình Pomodoro 25 phút tập trung cao độ, chuẩn bị slide và dọn dẹp không gian học tập.
+- 🏃 **Công viên / Đường chạy:** AI đề xuất bài khởi động dây chằng, chạy bộ Zone 2 duy trì 20 phút và giãn cơ bắp chân.
+
+**Luồng xử lý an toàn và tin cậy:**
+- Hình ảnh bối cảnh được hiển thị trong khung xem trước bo góc mềm mại với huy hiệu phân tích thị giác trực quan.
+- Người dùng có thể bổ sung ghi chú cá nhân (ví dụ: *"Tập giao cầu và đánh đôi 30 phút rèn phản xạ"*).
+- Bộ lọc an toàn (422) lập tức ngăn chặn nếu người dùng nhập nội dung nguy hiểm hoặc vi phạm chuẩn mực cộng đồng.
+- Sau khi AI phân tích, bản thảo gồm tiêu đề, mô tả, checklist và điểm XP được hiển thị để người dùng tự do chỉnh sửa trước khi bấm *"Xem lại và lưu thành quest"*. Hình ảnh minh chứng được tự động đính kèm vào thẻ nhiệm vụ.
+
+---
+
+### Chức năng 12: Không gian Thảo luận Nhóm (Group Chat) & Mời bạn bè tham gia
+![Hình 15: Giao diện Thảo luận nhóm và Tin nhắn nhanh](docs/screenshots/group-detail.png){width=42%}
+
+**Mô tả kết quả thực nghiệm:**  
+Trong màn hình chi tiết nhóm, người dùng có thể chuyển đổi linh hoạt giữa hai phân hệ:
+1. **Nhiệm vụ & Đội ngũ:** Quản lý danh sách thành viên, chuyển quyền trưởng nhóm, xóa thành viên vi phạm và danh sách quest nhóm.
+2. **💬 Thảo luận nhóm (Group Chat):** Kênh tương tác tức thời giữa các thành viên:
+   - Tin nhắn hiển thị dạng bong bóng hiện đại: tin nhắn của bản thân căn phải với màu chủ đạo, tin nhắn của đồng đội căn trái kèm tên hiển thị và mốc thời gian rõ ràng.
+   - **Thanh tin nhắn mẫu 1-chạm (Quick Reply Chips):** Giúp người dùng rủ bạn bè nhanh chóng mà không cần gõ phím: *"🏸 Cầu lông chiều nay?"*, *"🏃 Sáng mai chạy bộ nhé!"*, *"💻 Cày đồ án di động"*.
+   - **Hộp thoại Mời bạn bè (Invite Friend Dialog):** Cho phép sao chép nhanh lời mời kèm mã truy cập bảo mật để gửi qua Zalo, Messenger hoặc SMS.
+
+---
+
+### Chức năng 13: Giao diện thế hệ mới Design System v2 (AnimatedCounter & ProgressRing Neon)
+![Hình 16: Vòng tròn tiến độ Neon và Hiệu ứng chuyển số](docs/screenshots/home.png){width=42%}
+
+**Mô tả kết quả thực nghiệm:**  
+Để tăng cường tính hấp dẫn của yếu tố Gamification, nhóm đã nâng cấp hệ thống giao diện lên Design System v2:
+- **`AnimatedCounter`:** Thay thế việc hiển thị số tĩnh bằng hiệu ứng số nhảy mượt mà (smooth easing animation trong 900ms) mỗi khi điểm kinh nghiệm (XP) tăng lên hoặc chuỗi ngày Streak được duy trì.
+- **`ProgressRing` Neon 3D:** Thay thế thanh tiến trình phẳng bằng vòng tròn tiến độ chuyển màu Gradient (Cyan sang Blue) với đầu bo tròn và hiệu ứng đổ bóng phát sáng neon (glow effect), hiển thị trực quan tỷ lệ % tiến độ thăng cấp ngay tại thẻ cấp độ trên Trang chủ.
+- **`Quest Discovery`:** Bổ sung thanh lọc nhanh 5 trụ cột đời thường (Tất cả, Sức khỏe, Học tập, Công việc, Gia đình, Khác) giúp người dùng tìm kiếm nhiệm vụ một cách trực giác nhất.
+
+---
+
 ## 1.3. Kết quả kiểm thử thực tế (Testing & Quality Assurance)
 
 Đồ án được kiểm thử toàn diện thông qua các kịch bản kiểm thử tự động ở cả hai tầng Backend và Frontend:
@@ -228,7 +275,7 @@ Giao diện ứng dụng được xây dựng theo chuẩn Responsive Design:
 | Hạng mục kiểm thử | Công cụ / Lệnh thực thi | Số lượng kiểm thử | Kết quả kiểm thử |
 |---|---|:---:|:---:|
 | **Kiểm tra cú pháp & Chuẩn mã nguồn** | `flutter analyze` | Toàn bộ dự án Flutter | **0 cảnh báo, 0 lỗi (No issues found)** |
-| **Kiểm thử giao diện & Logic Mobile** | `flutter test` | 14 test cases | **14/14 ĐẠT (100% PASS)**<br>*(Kiểm thử Auth, Token 401, Quest, XP Idempotent, Gamification Level bình phương, AI moderation, Nhóm mã mời, Đổi mật khẩu)* |
+| **Kiểm thử giao diện & Logic Mobile** | `flutter test` | 24 test cases | **24/24 ĐẠT (100% PASS)**<br>*(Kiểm thử Auth, Token 401, Quest, XP Idempotent, Gamification Level bình phương, AI Vision bối cảnh ảnh thực tế, AI moderation 422, Group Chat & Quick Chips, Nhóm mã mời, Design System v2 AnimatedCounter/ProgressRing)* |
 | **Kiểm thử tích hợp Backend & CSDL** | `cd backend && npm test` | 12 test suites | **12/12 ĐẠT (100% PASS)**<br>*(Kiểm thử Xác thực JWT, Rate-limit brute-force 429, Transaction Idempotency, Phân quyền, Nhóm, Chặn người dùng, SSE Realtime, Migration CSDL)* |
 
 ---
