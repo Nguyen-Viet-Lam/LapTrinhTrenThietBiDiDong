@@ -601,24 +601,28 @@ class HomeScreen extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'MORE THAN AN APP • ĐỒNG HÀNH',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFF7DD3FC),
-                      letterSpacing: 0.8,
+                  const Expanded(
+                    child: Text(
+                      'MORE THAN AN APP • ĐỒNG HÀNH',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF7DD3FC),
+                        letterSpacing: 0.8,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
-                      'Vươn cao hơn • Đi xa hơn',
-                      style: TextStyle(fontSize: 10.5, color: Colors.white, fontWeight: FontWeight.bold),
+                      'Vươn cao hơn',
+                      style: TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -860,16 +864,19 @@ class HomeScreen extends ConsumerWidget {
                 child: const Icon(Icons.calendar_month, color: Color(0xFF10B981), size: 16),
               ),
               const SizedBox(width: 8),
-              const Text(
-                'MA TRẬN RÈN LUYỆN THÓI QUEN (7 NGÀY)',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0C1E3C),
-                  letterSpacing: 0.3,
+              const Expanded(
+                child: Text(
+                  'MA TRẬN THÓI QUEN (7 NGÀY)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0C1E3C),
+                    letterSpacing: 0.3,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -963,9 +970,12 @@ class HomeScreen extends ConsumerWidget {
               children: [
                 Icon(Icons.insights, size: 14, color: Color(0xFF0284C7)),
                 SizedBox(width: 8),
-                Text(
-                  'Tỷ lệ hoàn thành tuần này: 5/7 ngày (71% mục tiêu rèn luyện)',
-                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF0C1E3C)),
+                Expanded(
+                  child: Text(
+                    'Tỷ lệ hoàn thành tuần này: 5/7 ngày (71%)',
+                    style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF0C1E3C)),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),

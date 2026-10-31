@@ -21,14 +21,7 @@ class MainShell extends ConsumerStatefulWidget {
 class _MainShellState extends ConsumerState<MainShell> {
   int index = 0;
 
-  static const pages = [
-    HomeScreen(),
-    QuestsScreen(),
-    AiScreen(),
-    GroupsScreen(),
-    ProfileScreen(),
-    AdminScreen(),
-  ];
+
 
   @override
   Widget build(BuildContext context) {
@@ -54,17 +47,39 @@ class _MainShellState extends ConsumerState<MainShell> {
     final primaryAccent = isAdmin ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
     final textHeadingColor = isAdmin ? Colors.white : (isDark ? Colors.white : const Color(0xFF0C1E3C));
 
-    final titles = [
-      isAdmin ? 'Bảng điều khiển Quản trị' : 'Trang chủ LifeQuest',
-      isAdmin ? 'Giám sát Nhiệm vụ Hệ thống' : 'Nhiệm vụ của bạn',
-      'Trợ lý AI Lập kế hoạch',
-      isAdmin ? 'Quản lý Nhóm & CLB' : 'Nhóm & Đồng đội',
-      isAdmin ? 'Hồ sơ Quản trị viên' : 'Trang Người dùng (Hồ sơ)',
-      'Trung tâm Quản trị (Admin)',
-    ];
+    final pages = isAdmin
+        ? const [
+            HomeScreen(),
+            QuestsScreen(),
+            AdminScreen(),
+            GroupsScreen(),
+            ProfileScreen(),
+          ]
+        : const [
+            HomeScreen(),
+            QuestsScreen(),
+            AiScreen(),
+            GroupsScreen(),
+            ProfileScreen(),
+          ];
 
-    // Security guard: Ensure non-admin users cannot stay on Admin index (5)
-    if (!isAdmin && index == 5) {
+    final titles = isAdmin
+        ? const [
+            'Bảng điều khiển Quản trị',
+            'Giám sát Nhiệm vụ Hệ thống',
+            'Kiểm duyệt & An toàn Hệ thống',
+            'Quản lý Nhóm & CLB',
+            'Hồ sơ Quản trị viên',
+          ]
+        : const [
+            'Trang chủ LifeQuest',
+            'Nhiệm vụ của bạn',
+            'Trợ lý AI Lập kế hoạch & Thị giác',
+            'Nhóm & Đồng đội',
+            'Hồ sơ Cá nhân',
+          ];
+
+    if (index >= pages.length) {
       index = 0;
     }
 
@@ -234,33 +249,61 @@ class _MainShellState extends ConsumerState<MainShell> {
               : const Color(0xFFBAE6FD).withValues(alpha: 0.4),
           selectedIndex: index > 4 ? 0 : index,
           onDestinationSelected: (i) => setState(() => index = i),
-          destinations: [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined, color: isAdmin ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-              selectedIcon: Icon(Icons.home, color: primaryAccent),
-              label: isAdmin ? 'Admin' : 'Trang chủ',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.task_alt_outlined, color: isAdmin ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-              selectedIcon: Icon(Icons.task_alt, color: primaryAccent),
-              label: 'Nhiệm vụ',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.auto_awesome_outlined, color: isAdmin ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-              selectedIcon: Icon(Icons.auto_awesome, color: primaryAccent),
-              label: 'AI Plan',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.groups_outlined, color: isAdmin ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-              selectedIcon: Icon(Icons.groups, color: primaryAccent),
-              label: isAdmin ? 'CLB Nhóm' : 'Nhóm',
-            ),
-            NavigationDestination(
-              icon: Icon(isAdmin ? Icons.shield_outlined : Icons.person_outline, color: isAdmin ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-              selectedIcon: Icon(isAdmin ? Icons.shield : Icons.person, color: primaryAccent),
-              label: isAdmin ? 'Hồ sơ' : 'User',
-            ),
-          ],
+          destinations: isAdmin
+              ? [
+                  NavigationDestination(
+                    icon: const Icon(Icons.dashboard_outlined, color: Color(0xFF94A3B8)),
+                    selectedIcon: Icon(Icons.dashboard, color: primaryAccent),
+                    label: 'Admin',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.assignment_outlined, color: Color(0xFF94A3B8)),
+                    selectedIcon: Icon(Icons.assignment, color: primaryAccent),
+                    label: 'Nhiệm vụ',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.admin_panel_settings_outlined, color: Color(0xFF94A3B8)),
+                    selectedIcon: Icon(Icons.admin_panel_settings, color: primaryAccent),
+                    label: 'Kiểm duyệt',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.groups_outlined, color: Color(0xFF94A3B8)),
+                    selectedIcon: Icon(Icons.groups, color: primaryAccent),
+                    label: 'CLB Nhóm',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.shield_outlined, color: Color(0xFF94A3B8)),
+                    selectedIcon: Icon(Icons.shield, color: primaryAccent),
+                    label: 'Hồ sơ',
+                  ),
+                ]
+              : [
+                  NavigationDestination(
+                    icon: const Icon(Icons.home_outlined, color: Color(0xFF64748B)),
+                    selectedIcon: Icon(Icons.home, color: primaryAccent),
+                    label: 'Trang chủ',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.task_alt_outlined, color: Color(0xFF64748B)),
+                    selectedIcon: Icon(Icons.task_alt, color: primaryAccent),
+                    label: 'Nhiệm vụ',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.auto_awesome_outlined, color: Color(0xFF64748B)),
+                    selectedIcon: Icon(Icons.auto_awesome, color: primaryAccent),
+                    label: 'AI Plan',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.groups_outlined, color: Color(0xFF64748B)),
+                    selectedIcon: Icon(Icons.groups, color: primaryAccent),
+                    label: 'CLB Nhóm',
+                  ),
+                  NavigationDestination(
+                    icon: const Icon(Icons.person_outline, color: Color(0xFF64748B)),
+                    selectedIcon: Icon(Icons.person, color: primaryAccent),
+                    label: 'Hồ sơ',
+                  ),
+                ],
         ),
       ),
     );
@@ -406,25 +449,9 @@ class _MainShellState extends ConsumerState<MainShell> {
               children: [
                 _buildSidebarItem(0, Icons.home_outlined, Icons.home, isAdmin ? 'Bảng điều khiển' : 'Trang chủ', isAdmin, primary, textCol),
                 _buildSidebarItem(1, Icons.task_alt_outlined, Icons.task_alt, isAdmin ? 'Giám sát Nhiệm vụ' : 'Nhiệm vụ', isAdmin, primary, textCol),
-                _buildSidebarItem(2, Icons.auto_awesome_outlined, Icons.auto_awesome, 'Trợ lý AI', isAdmin, primary, textCol),
+                _buildSidebarItem(2, isAdmin ? Icons.admin_panel_settings_outlined : Icons.auto_awesome_outlined, isAdmin ? Icons.admin_panel_settings : Icons.auto_awesome, isAdmin ? 'Kiểm duyệt & An toàn' : 'Trợ lý AI', isAdmin, primary, textCol),
                 _buildSidebarItem(3, Icons.groups_outlined, Icons.groups, isAdmin ? 'Quản lý Nhóm' : 'Nhóm & Đồng đội', isAdmin, primary, textCol),
                 _buildSidebarItem(4, isAdmin ? Icons.shield_outlined : Icons.person_outline, isAdmin ? Icons.shield : Icons.person, isAdmin ? 'Hồ sơ Quản trị' : 'Trang User (Hồ sơ)', isAdmin, primary, textCol),
-                if (isAdmin) ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Divider(height: 1, color: border),
-                  ),
-                  _buildSidebarItem(
-                    5,
-                    Icons.admin_panel_settings_outlined,
-                    Icons.admin_panel_settings,
-                    'Quản trị Admin',
-                    isAdmin,
-                    primary,
-                    textCol,
-                    isBadge: true,
-                  ),
-                ],
               ],
             ),
           ),
@@ -594,12 +621,10 @@ class _MainShellState extends ConsumerState<MainShell> {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 children: [
                   _buildSidebarItem(0, Icons.home_outlined, Icons.home, isAdmin ? 'Bảng điều khiển' : 'Trang chủ', isAdmin, primary, textCol),
-                  _buildSidebarItem(1, Icons.task_alt_outlined, Icons.task_alt, 'Nhiệm vụ', isAdmin, primary, textCol),
-                  _buildSidebarItem(2, Icons.auto_awesome_outlined, Icons.auto_awesome, 'Trợ lý AI', isAdmin, primary, textCol),
-                  _buildSidebarItem(3, Icons.groups_outlined, Icons.groups, 'Nhóm & Đồng đội', isAdmin, primary, textCol),
-                  _buildSidebarItem(4, Icons.person_outline, Icons.person, 'Hồ sơ người dùng', isAdmin, primary, textCol),
-                  if (isAdmin)
-                    _buildSidebarItem(5, Icons.admin_panel_settings_outlined, Icons.admin_panel_settings, 'Trung tâm Admin', isAdmin, primary, textCol),
+                  _buildSidebarItem(1, Icons.task_alt_outlined, Icons.task_alt, isAdmin ? 'Giám sát Nhiệm vụ' : 'Nhiệm vụ', isAdmin, primary, textCol),
+                  _buildSidebarItem(2, isAdmin ? Icons.admin_panel_settings_outlined : Icons.auto_awesome_outlined, isAdmin ? Icons.admin_panel_settings : Icons.auto_awesome, isAdmin ? 'Kiểm duyệt & An toàn' : 'Trợ lý AI', isAdmin, primary, textCol),
+                  _buildSidebarItem(3, Icons.groups_outlined, Icons.groups, isAdmin ? 'Quản lý Nhóm' : 'Nhóm & Đồng đội', isAdmin, primary, textCol),
+                  _buildSidebarItem(4, isAdmin ? Icons.shield_outlined : Icons.person_outline, isAdmin ? Icons.shield : Icons.person, isAdmin ? 'Hồ sơ Quản trị' : 'Hồ sơ người dùng', isAdmin, primary, textCol),
                 ],
               ),
             ),

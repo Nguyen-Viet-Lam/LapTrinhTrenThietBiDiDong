@@ -103,5 +103,50 @@ void main() {
         );
       },
     );
+
+    test('getDirectMessages trả về tin nhắn chào mừng kết nối 1-1', () {
+      final messages = controller.getDirectMessages('peer-123');
+      expect(messages.isNotEmpty, isTrue);
+      expect(messages.first.content, contains('Chào bạn'));
+    });
+
+    test('sendDirectMessage gửi tin nhắn 1-1 thành công', () {
+      controller.sendDirectMessage('peer-123', 'Bạn Tuấn', 'Hẹn 5h chiều nay ở sân cầu lông nhé!');
+      final messages = controller.getDirectMessages('peer-123');
+      expect(messages.length, 2);
+      expect(messages.last.content, 'Hẹn 5h chiều nay ở sân cầu lông nhé!');
+      expect(messages.last.isSelf, isTrue);
+    });
+
+    testWidgets('hiển thị DirectChatSheet và gửi tin nhắn 1-1', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appControllerProvider.overrideWith((ref) => controller),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: DirectChatSheet(
+                peerId: 'peer-test',
+                peerName: 'Nguyễn Văn A',
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Nguyễn Văn A'), findsOneWidget);
+      expect(find.text('Nhắn tin 1-1 riêng tư & an toàn'), findsOneWidget);
+      expect(find.text('🏸 Chiều nay đi đánh cầu không?'), findsOneWidget);
+
+      await tester.tap(find.text('🏸 Chiều nay đi đánh cầu không?'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('🏸 Chiều nay đi đánh cầu không?'), findsAtLeastNWidgets(1));
+    });
   });
 }

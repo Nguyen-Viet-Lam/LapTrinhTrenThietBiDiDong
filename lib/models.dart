@@ -635,3 +635,45 @@ class CompleteQuestResult {
   final bool idempotent;
   final Quest quest;
 }
+
+
+/// Mô hình tin nhắn trò chuyện trực tiếp 1-1 giữa hai thành viên
+class DirectMessage {
+  const DirectMessage({
+    required this.id,
+    required this.senderId,
+    required this.receiverId,
+    required this.senderName,
+    required this.content,
+    required this.createdAt,
+    this.isSelf = false,
+  });
+
+  final String id;
+  final String senderId;
+  final String receiverId;
+  final String senderName;
+  final String content;
+  final DateTime createdAt;
+  final bool isSelf;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'senderId': senderId,
+    'receiverId': receiverId,
+    'senderName': senderName,
+    'content': content,
+    'createdAt': createdAt.toIso8601String(),
+    'isSelf': isSelf,
+  };
+
+  factory DirectMessage.fromJson(Map<String, dynamic> json) => DirectMessage(
+    id: json['id'] as String,
+    senderId: json['senderId'] as String,
+    receiverId: json['receiverId'] as String,
+    senderName: json['senderName'] as String,
+    content: json['content'] as String,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    isSelf: json['isSelf'] as bool? ?? false,
+  );
+}

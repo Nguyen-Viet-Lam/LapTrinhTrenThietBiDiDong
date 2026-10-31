@@ -234,117 +234,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
-          const SizedBox(height: 18),
-          // Demo Account Selector for quick testing
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0F9FF),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFBAE6FD)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.flash_on, size: 16, color: Color(0xFF0284C7)),
-                    SizedBox(width: 6),
-                    Text(
-                      'Tài khoản kiểm thử nhanh (1 chạm điền):',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF0369A1),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    ActionChip(
-                      backgroundColor: email.text == 'lam@lifequest.vn'
-                          ? const Color(0xFF0284C7)
-                          : Colors.white,
-                      label: Text(
-                        '🛡️ Admin (Lãm)',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: email.text == 'lam@lifequest.vn' ? Colors.white : const Color(0xFF0C1E3C),
-                        ),
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          email.text = 'lam@lifequest.vn';
-                          password.text = '123456';
-                        });
-                      },
-                    ),
-                    ActionChip(
-                      backgroundColor: email.text == 'demo@lifequest.vn'
-                          ? const Color(0xFF0284C7)
-                          : Colors.white,
-                      label: Text(
-                        '👤 User (Demo)',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: email.text == 'demo@lifequest.vn' ? Colors.white : const Color(0xFF0C1E3C),
-                        ),
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          email.text = 'demo@lifequest.vn';
-                          password.text = '123456';
-                        });
-                      },
-                    ),
-                    ActionChip(
-                      backgroundColor: email.text == 'ky@lifequest.vn'
-                          ? const Color(0xFF0284C7)
-                          : Colors.white,
-                      label: Text(
-                        '⚡ User (Kỳ)',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: email.text == 'ky@lifequest.vn' ? Colors.white : const Color(0xFF0C1E3C),
-                        ),
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          email.text = 'ky@lifequest.vn';
-                          password.text = '123456';
-                        });
-                      },
-                    ),
-                    ActionChip(
-                      backgroundColor: email.text == 'tuan@lifequest.vn'
-                          ? const Color(0xFF0284C7)
-                          : Colors.white,
-                      label: Text(
-                        '📘 User (Tuấn)',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: email.text == 'tuan@lifequest.vn' ? Colors.white : const Color(0xFF0C1E3C),
-                        ),
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          email.text = 'tuan@lifequest.vn';
-                          password.text = '123456';
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ActionChip(
+                avatar: const Icon(Icons.person, size: 16, color: Color(0xFF2563EB)),
+                label: const Text('User: Kỳ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                backgroundColor: const Color(0xFFEFF6FF),
+                side: const BorderSide(color: Color(0xFFBFDBFE)),
+                onPressed: () {
+                  setState(() {
+                    email.text = 'ky@lifequest.vn';
+                    password.text = '123456';
+                  });
+                },
+              ),
+              const SizedBox(width: 10),
+              ActionChip(
+                avatar: const Icon(Icons.shield, size: 16, color: Color(0xFF0F172A)),
+                label: const Text('Admin: Lãm', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                backgroundColor: const Color(0xFFF1F5F9),
+                side: const BorderSide(color: Color(0xFFCBD5E1)),
+                onPressed: () {
+                  setState(() {
+                    email.text = 'lam@lifequest.vn';
+                    password.text = '123456';
+                  });
+                },
+              ),
+            ],
           ),
         ],
       ),

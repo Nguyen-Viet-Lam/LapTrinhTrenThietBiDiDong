@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../api/api_client.dart';
 import '../api/api_exception.dart';
@@ -20,6 +21,14 @@ class GroupsScreen extends ConsumerStatefulWidget {
 class _GroupsScreenState extends ConsumerState<GroupsScreen> {
   bool refreshing = false;
   String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) refresh();
+    });
+  }
 
   Future<void> refresh() async {
     setState(() {
@@ -49,8 +58,8 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () => _join(context, ref),
-                  icon: const Icon(Icons.group_add_outlined),
-                  label: const Text('Nhập mã mời'),
+                  icon: const Icon(Icons.qr_code_scanner),
+                  label: const Text('Quét / Nhập mã'),
                 ),
               ),
               const SizedBox(width: 10),
@@ -271,8 +280,8 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
 
     await showDialog<void>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
           title: const Text('Tham gia nhóm'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -280,10 +289,38 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
               TextField(
                 controller: code,
                 textCapitalization: TextCapitalization.characters,
-                decoration: const InputDecoration(
-                  labelText: 'Mã mời',
-                  hintText: 'Ví dụ LIFE2026',
+                decoration: InputDecoration(
+                  labelText: 'Mã mời hoặc liên kết QR',
+                  hintText: 'Ví dụ LIFE2026 hoặc dán mã QR',
+                  prefixIcon: const Icon(Icons.qr_code_2),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.paste),
+                    tooltip: 'Dán từ clipboard',
+                    onPressed: () async {
+                      final data = await Clipboard.getData('text/plain');
+                      if (data?.text != null) {
+                        var text = data!.text!.trim();
+                        if (text.startsWith('lifequest://group')) {
+                          final uri = Uri.tryParse(text);
+                          text = uri?.queryParameters['invite'] ?? text;
+                        }
+                        code.text = text.toUpperCase();
+                        setDialogState(() {});
+                      }
+                    },
+                  ),
                 ),
+                onChanged: (val) {
+                  final trimmed = val.trim();
+                  if (trimmed.startsWith('lifequest://group')) {
+                    final uri = Uri.tryParse(trimmed);
+                    final invite = uri?.queryParameters['invite'];
+                    if (invite != null && invite.isNotEmpty) {
+                      code.text = invite.toUpperCase();
+                      setDialogState(() {});
+                    }
+                  }
+                },
               ),
               if (dialogError != null)
                 Padding(
@@ -291,7 +328,7 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                   child: Text(
                     dialogError!,
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                      color: Theme.of(ctx).colorScheme.error,
                     ),
                   ),
                 ),
@@ -299,7 +336,7 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: joining ? null : () => Navigator.pop(context),
+              onPressed: joining ? null : () => Navigator.of(dialogCtx).pop(),
               child: const Text('Hủy'),
             ),
             FilledButton(
@@ -307,20 +344,22 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                   ? null
                   : () async {
                       if (code.text.trim().isEmpty) {
-                        setState(() => dialogError = 'Vui lòng nhập mã mời.');
+                        setDialogState(() => dialogError = 'Vui lòng nhập mã mời.');
                         return;
                       }
-                      setState(() {
+                      setDialogState(() {
                         joining = true;
                         dialogError = null;
                       });
                       final message = await ref
                           .read(appControllerProvider)
                           .joinGroup(code.text.trim());
-                      if (message == null && context.mounted) {
-                        Navigator.pop(context);
+                      if (message == null) {
+                        if (dialogCtx.mounted) {
+                          Navigator.of(dialogCtx).pop();
+                        }
                       } else {
-                        setState(() {
+                        setDialogState(() {
                           dialogError = message;
                           joining = false;
                         });
@@ -384,6 +423,47 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
                 style: const TextStyle(fontSize: 12.5, fontStyle: FontStyle.italic),
               ),
             ),
+            if (group.inviteCode != null && group.inviteCode!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: QrImageView(
+                    data: 'lifequest://group?invite=${group.inviteCode}',
+                    version: QrVersions.auto,
+                    size: 150.0,
+                    gapless: true,
+                    eyeStyle: const QrEyeStyle(
+                      eyeShape: QrEyeShape.square,
+                      color: Color(0xFF0F172A),
+                    ),
+                    dataModuleStyle: const QrDataModuleStyle(
+                      dataModuleShape: QrDataModuleShape.square,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Center(
+                child: Text(
+                  '📱 Quét mã để vào nhóm nhanh chóng',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
           ],
         ),
         actions: [
@@ -832,8 +912,19 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
                     ),
                     trailing: isSelf
                         ? null
-                        : PopupMenuButton<String>(
-                            onSelected: (value) async {
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.chat_bubble_outline, color: Color(0xFF0284C7)),
+                                tooltip: 'Nhắn tin 1-1',
+                                onPressed: () => _openDirectChatSheet(context, member.id, member.displayName),
+                              ),
+                              PopupMenuButton<String>(
+                                onSelected: (value) async {
+                                  if (value == 'direct_chat') {
+                                    _openDirectChatSheet(context, member.id, member.displayName);
+                                  } else 
                               if (value == 'transfer') {
                                 final confirm = await showDialog<bool>(
                                   context: context,
@@ -931,6 +1022,16 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
                               }
                             },
                             itemBuilder: (_) => [
+                                const PopupMenuItem(
+                                  value: 'direct_chat',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.chat, size: 16, color: Color(0xFF0284C7)),
+                                      SizedBox(width: 8),
+                                      Text('Nhắn tin 1-1'),
+                                    ],
+                                  ),
+                                ),
                               if (isOwner && !isMemberOwner) ...[
                                 const PopupMenuItem(
                                   value: 'transfer',
@@ -951,6 +1052,8 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
                               ),
                             ],
                           ),
+                        ],
+                      ),
                   );
                 }),
             const SizedBox(height: 10),
@@ -1048,6 +1151,296 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  void _openDirectChatSheet(BuildContext context, String peerId, String peerName) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DirectChatSheet(peerId: peerId, peerName: peerName),
+    );
+  }
+}
+
+/// Giao diện trò chuyện trực tiếp 1-1 giữa 2 thành viên
+class DirectChatSheet extends ConsumerStatefulWidget {
+  const DirectChatSheet({
+    super.key,
+    required this.peerId,
+    required this.peerName,
+  });
+
+  final String peerId;
+  final String peerName;
+
+  @override
+  ConsumerState<DirectChatSheet> createState() => _DirectChatSheetState();
+}
+
+class _DirectChatSheetState extends ConsumerState<DirectChatSheet> {
+  final TextEditingController _msgController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _msgController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _sendMessage([String? quickText]) {
+    final text = quickText ?? _msgController.text;
+    if (text.trim().isEmpty) return;
+
+    ref.read(appControllerProvider).sendDirectMessage(
+          widget.peerId,
+          widget.peerName,
+          text,
+        );
+
+    if (quickText == null) {
+      _msgController.clear();
+    }
+
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = ref.watch(appControllerProvider);
+    final messages = controller.getDirectMessages(widget.peerId);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final quickChips = [
+      '🏸 Chiều nay đi đánh cầu không?',
+      '⚽ Mấy giờ có mặt ở sân thế?',
+      '📚 Mai lên thư viện học nhóm nhé!',
+      '👍 OK chốt kèo nhé!',
+    ];
+
+    return Container(
+      height: MediaQuery.sizeOf(context).height * 0.85,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Header Bar
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                ),
+              ),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                  child: Text(
+                    widget.peerName.isNotEmpty ? widget.peerName.substring(0, 1).toUpperCase() : 'U',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0284C7),
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              widget.peerName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'Online',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Color(0xFF10B981),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Text(
+                        'Nhắn tin 1-1 riêng tư & an toàn',
+                        style: TextStyle(fontSize: 11, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+
+          // Message List
+          Expanded(
+            child: ListView.builder(
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              itemCount: messages.length,
+              itemBuilder: (context, index) {
+                final msg = messages[index];
+                final isSelf = msg.isSelf;
+
+                return Align(
+                  alignment: isSelf ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.sizeOf(context).width * 0.75,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isSelf
+                          ? const Color(0xFF0284C7)
+                          : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(16),
+                        topRight: const Radius.circular(16),
+                        bottomLeft: Radius.circular(isSelf ? 16 : 4),
+                        bottomRight: Radius.circular(isSelf ? 4 : 16),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment:
+                          isSelf ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          msg.content,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isSelf
+                                ? Colors.white
+                                : (isDark ? Colors.white : const Color(0xFF0F172A)),
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          DateFormat('HH:mm').format(msg.createdAt),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: isSelf ? Colors.white70 : Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // Quick Suggestion Chips
+          SizedBox(
+            height: 42,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              scrollDirection: Axis.horizontal,
+              itemCount: quickChips.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, idx) {
+                final chip = quickChips[idx];
+                return ActionChip(
+                  label: Text(chip, style: const TextStyle(fontSize: 12)),
+                  backgroundColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFE0F2FE),
+                  onPressed: () => _sendMessage(chip),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Bottom Input Field
+          SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                border: Border(
+                  top: BorderSide(
+                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _msgController,
+                      decoration: InputDecoration(
+                        hintText: 'Nhắn tin 1-1 cho ${widget.peerName}...',
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      onSubmitted: (_) => _sendMessage(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    style: IconButton.styleFrom(
+                      backgroundColor: const Color(0xFF0284C7),
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () => _sendMessage(),
+                    icon: const Icon(Icons.send, size: 20),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

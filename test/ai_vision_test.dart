@@ -118,5 +118,16 @@ void main() {
       expect(find.widgetWithText(ChoiceChip, 'Góc học tập / Đồ án'), findsOneWidget);
       expect(find.text('📸 Phân tích ảnh & Tạo nhiệm vụ'), findsOneWidget);
     });
+
+    test('danh sách visionPresets cung cấp đầy đủ 7 bối cảnh thể thao và học tập', () {
+      expect(visionPresets.length, 7);
+      expect(visionPresets.any((p) => p.name == 'Sân cầu lông'), isTrue);
+      expect(visionPresets.any((p) => p.name == 'Sân bóng rổ / chuyền'), isTrue);
+      expect(visionPresets.any((p) => p.name == 'Sân Pickleball'), isTrue);
+      expect(visionPresets.any((p) => p.name == 'Sân bóng đá mini'), isTrue);
+      expect(visionPresets.any((p) => p.name == 'Phòng Gym'), isTrue);
+      expect(visionPresets.any((p) => p.name == 'Công viên chạy bộ'), isTrue);
+      expect(visionPresets.any((p) => p.name == 'Góc học tập / Đồ án'), isTrue);
+    });
   });
 }

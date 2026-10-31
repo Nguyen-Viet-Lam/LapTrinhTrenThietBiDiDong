@@ -68,78 +68,36 @@ class _AdminScreenState extends ConsumerState<AdminScreen> with SingleTickerProv
 
     return Scaffold(
       backgroundColor: const Color(0xFF030712),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF050E24),
-        elevation: 0,
-        title: const Row(
-          children: [
-            Icon(Icons.admin_panel_settings, color: Color(0xFF38BDF8)),
-            SizedBox(width: 8),
-            Text(
-              'Trung tâm Quản trị (Admin Dashboard)',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 17),
-            ),
-          ],
-        ),
-        actions: [
-          // Role indicator & Quick Switcher
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: isAdmin
-                  ? const Color(0xFF38BDF8).withValues(alpha: 0.15)
-                  : Colors.amber.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isAdmin ? const Color(0xFF38BDF8) : Colors.amber.shade700,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isAdmin ? Icons.verified_user : Icons.person,
-                  size: 14,
-                  color: isAdmin ? const Color(0xFF38BDF8) : Colors.amber.shade400,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  isAdmin ? 'Quyền: ADMIN' : 'Quyền: USER',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.bold,
-                    color: isAdmin ? const Color(0xFF38BDF8) : Colors.amber.shade400,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-        bottom: isAdmin
-            ? TabBar(
-                controller: _tabController,
-                indicatorColor: const Color(0xFF38BDF8),
-                indicatorWeight: 3,
-                labelColor: const Color(0xFF38BDF8),
-                unselectedLabelColor: const Color(0xFF64748B),
-                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                tabs: const [
-                  Tab(icon: Icon(Icons.dashboard_outlined), text: 'Tổng quan'),
-                  Tab(icon: Icon(Icons.people_alt_outlined), text: 'Quản lý Người dùng'),
-                  Tab(icon: Icon(Icons.security_outlined), text: 'Báo cáo & An toàn'),
-                ],
-              )
-            : null,
-      ),
       body: !isAdmin
           ? _buildAccessDenied(context, controller)
-          : TabBarView(
-              controller: _tabController,
+          : Column(
               children: [
-                _buildOverviewTab(context, controller),
-                _buildUsersTab(context, controller),
-                _buildReportsTab(context, controller),
+                Container(
+                  color: const Color(0xFF060D1E),
+                  child: TabBar(
+                    controller: _tabController,
+                    indicatorColor: const Color(0xFF38BDF8),
+                    indicatorWeight: 3,
+                    labelColor: const Color(0xFF38BDF8),
+                    unselectedLabelColor: const Color(0xFF64748B),
+                    labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    tabs: const [
+                      Tab(icon: Icon(Icons.dashboard_outlined), text: 'Tổng quan'),
+                      Tab(icon: Icon(Icons.people_alt_outlined), text: 'Người dùng'),
+                      Tab(icon: Icon(Icons.security_outlined), text: 'Báo cáo & An toàn'),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildOverviewTab(context, controller),
+                      _buildUsersTab(context, controller),
+                      _buildReportsTab(context, controller),
+                    ],
+                  ),
+                ),
               ],
             ),
     );

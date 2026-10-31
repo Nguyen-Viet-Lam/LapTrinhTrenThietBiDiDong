@@ -815,6 +815,48 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ------------------ Direct 1-1 Chat ------------------
+
+  final Map<String, List<DirectMessage>> _directMessages = {};
+
+  List<DirectMessage> getDirectMessages(String peerId) {
+    if (!_directMessages.containsKey(peerId)) {
+      final currentUserId = currentUser?.id ?? '';
+      _directMessages[peerId] = [
+        DirectMessage(
+          id: 'welcome-$peerId',
+          senderId: peerId,
+          receiverId: currentUserId,
+          senderName: 'Bạn bè LifeQuest',
+          content:
+              'Chào bạn! Rất vui được kết nối. Hôm nay cùng hẹn nhau đi tập thể thao hoặc rèn luyện thói quen nhé! 🏸⚽',
+          createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
+          isSelf: false,
+        ),
+      ];
+    }
+    return _directMessages[peerId]!;
+  }
+
+  void sendDirectMessage(String peerId, String peerName, String content) {
+    final trimmed = content.trim();
+    if (trimmed.isEmpty) return;
+
+    final user = currentUser;
+    final msg = DirectMessage(
+      id: 'dm-${DateTime.now().millisecondsSinceEpoch}',
+      senderId: user?.id ?? 'me',
+      receiverId: peerId,
+      senderName: user?.displayName ?? 'Tôi',
+      content: trimmed,
+      createdAt: DateTime.now(),
+      isSelf: true,
+    );
+
+    getDirectMessages(peerId).add(msg);
+    notifyListeners();
+  }
+
   // ------------------ AI ------------------
 
   Future<AiQuestDraft> generateAiPlan(

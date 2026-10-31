@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../api/api_exception.dart';
 import '../app_controller.dart';
@@ -172,6 +174,143 @@ class QuestDetailSheet extends ConsumerStatefulWidget {
 class _QuestDetailSheetState extends ConsumerState<QuestDetailSheet> {
   bool busy = false;
 
+  void _showQuestQrDialog(BuildContext context, Quest quest) {
+    final payload = Uri(
+      scheme: 'lifequest',
+      host: 'quest',
+      queryParameters: {
+        'title': quest.title,
+        'desc': quest.description,
+        'cat': quest.category,
+        'diff': quest.difficulty.name,
+        'steps': quest.steps.map((s) => s.title).join('|||'),
+        'xp': '${quest.xpReward}',
+        if (quest.imageUrl != null && quest.imageUrl!.isNotEmpty)
+          'img': quest.imageUrl!,
+      },
+    ).toString();
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.qr_code_2, color: Color(0xFF0284C7), size: 28),
+                  SizedBox(width: 8),
+                  Text(
+                    'Mã QR Làm Chung Nhiệm Vụ',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Bạn bè có thể quét mã này để cùng nhận và làm nhiệm vụ "${quest.title}"!',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: QrImageView(
+                  data: payload,
+                  version: QrVersions.auto,
+                  size: 200.0,
+                  gapless: true,
+                  eyeStyle: const QrEyeStyle(
+                    eyeShape: QrEyeShape.square,
+                    color: Color(0xFF0F172A),
+                  ),
+                  dataModuleStyle: const QrDataModuleStyle(
+                    dataModuleShape: QrDataModuleShape.square,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.bolt, size: 16, color: Color(0xFFEAB308)),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${quest.steps.length} bước • +${quest.xpReward} XP',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF334155),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: payload));
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Đã sao chép liên kết mã QR nhiệm vụ!'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.copy, size: 18),
+                      label: const Text('Sao chép mã'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Đóng'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = ref.watch(appControllerProvider);
@@ -290,11 +429,23 @@ class _QuestDetailSheetState extends ConsumerState<QuestDetailSheet> {
                             if (mounted) setState(() => busy = false);
                           }
                         }
+                      } else if (value == 'share_qr' && context.mounted) {
+                        _showQuestQrDialog(context, quest);
                       } else if (value == 'report' && context.mounted) {
                         await showReportDialog(context, ref, 'quest', quest.id);
                       }
                     },
                     itemBuilder: (_) => [
+                      const PopupMenuItem(
+                        value: 'share_qr',
+                        child: Row(
+                          children: [
+                            Icon(Icons.qr_code_2, size: 18, color: Color(0xFF0284C7)),
+                            SizedBox(width: 8),
+                            Text('Chia sẻ mã QR'),
+                          ],
+                        ),
+                      ),
                       if (isActive)
                         const PopupMenuItem(
                           value: 'edit',
@@ -472,6 +623,7 @@ class _CreateQuestSheetState extends ConsumerState<CreateQuestSheet> {
   );
   late QuestDifficulty difficulty = widget.initialDifficulty;
   late String category = widget.initialCategory;
+  late String? selectedGroupId = widget.groupId;
   DateTime? dueAt;
   String? assigneeId;
   bool saving = false;
@@ -488,9 +640,9 @@ class _CreateQuestSheetState extends ConsumerState<CreateQuestSheet> {
   @override
   Widget build(BuildContext context) {
     final controller = ref.watch(appControllerProvider);
-    final group = widget.groupId != null
+    final group = selectedGroupId != null
         ? controller.groups
-            .where((g) => g.id == widget.groupId)
+            .where((g) => g.id == selectedGroupId)
             .firstOrNull
         : null;
 
@@ -563,6 +715,32 @@ class _CreateQuestSheetState extends ConsumerState<CreateQuestSheet> {
                 ),
               ),
               const SizedBox(height: 10),
+              if (widget.groupId == null && controller.groups.isNotEmpty) ...[
+                DropdownButtonFormField<String?>(
+                  initialValue: selectedGroupId,
+                  decoration: const InputDecoration(
+                    labelText: 'Phạm vi nhiệm vụ',
+                    prefixIcon: Icon(Icons.hub_outlined),
+                  ),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Cá nhân (Chỉ mình tôi)'),
+                    ),
+                    ...controller.groups.map(
+                      (g) => DropdownMenuItem<String?>(
+                        value: g.id,
+                        child: Text('${g.name} (Nhóm)'),
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) => setState(() {
+                    selectedGroupId = value;
+                    assigneeId = null;
+                  }),
+                ),
+                const SizedBox(height: 10),
+              ],
               DropdownButtonFormField<String>(
                 initialValue: category,
                 decoration: const InputDecoration(labelText: 'Danh mục'),
@@ -733,7 +911,7 @@ class _CreateQuestSheetState extends ConsumerState<CreateQuestSheet> {
                                 steps: stepLines,
                                 dueAt: dueAt,
                                 createdByAi: widget.createdByAi,
-                                groupId: widget.groupId,
+                                groupId: selectedGroupId,
                                 assigneeId: assigneeId,
                                 imageUrl: imageUrl,
                               );

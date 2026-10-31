@@ -1,5 +1,11 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../api/api_exception.dart';
 import '../app_controller.dart';
@@ -64,6 +70,22 @@ const visionPresets = [
         'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=800&q=80',
     suggestedNote: 'Chạy bộ 3km hít thở không khí trong lành buổi sáng',
   ),
+  VisionPreset(
+    id: 'pickleball',
+    name: 'Sân Pickleball',
+    icon: Icons.sports_tennis,
+    imageUrl:
+        'https://images.unsplash.com/photo-1599474924187-334a4ae5bd3c?w=800&q=80',
+    suggestedNote: 'Giao lưu Pickleball đôi và tập dink bóng lưới rèn phản xạ',
+  ),
+  VisionPreset(
+    id: 'football',
+    name: 'Sân bóng đá mini',
+    icon: Icons.sports_soccer,
+    imageUrl:
+        'https://images.unsplash.com/photo-1529900241451-b8529587a5b9?w=800&q=80',
+    suggestedNote: 'Đá bóng mini 5 người rèn thể lực và phối hợp chiến thuật',
+  ),
 ];
 
 class AiScreen extends ConsumerStatefulWidget {
@@ -83,6 +105,8 @@ class _AiScreenState extends ConsumerState<AiScreen> {
   QuestDifficulty difficulty = QuestDifficulty.easy;
 
   // Vision Quest State
+  final ImagePicker _imagePicker = ImagePicker();
+  XFile? pickedFile;
   int selectedPresetIndex = 0;
   late final TextEditingController visionNote = TextEditingController(
     text: visionPresets[0].suggestedNote,
@@ -107,8 +131,41 @@ class _AiScreenState extends ConsumerState<AiScreen> {
   void onSelectPreset(int index) {
     setState(() {
       selectedPresetIndex = index;
+      pickedFile = null;
       useCustomImage = false;
       visionNote.text = visionPresets[index].suggestedNote;
+    });
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? file = await _imagePicker.pickImage(
+        source: source,
+        maxWidth: 1200,
+        maxHeight: 1200,
+        imageQuality: 85,
+      );
+      if (file != null) {
+        setState(() {
+          pickedFile = file;
+          useCustomImage = true;
+          visionNote.text = 'Kế hoạch thực hiện mục tiêu từ ảnh chụp thực tế';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Không thể truy cập camera hoặc thư viện ảnh: $e')),
+        );
+      }
+    }
+  }
+
+  void _clearPickedImage() {
+    setState(() {
+      pickedFile = null;
+      useCustomImage = false;
+      visionNote.text = visionPresets[selectedPresetIndex].suggestedNote;
     });
   }
 
@@ -167,10 +224,14 @@ class _AiScreenState extends ConsumerState<AiScreen> {
   }
 
   Future<void> generateVisionPlan() async {
-    final activeUrl = useCustomImage && customImageUrl.text.trim().isNotEmpty
-        ? customImageUrl.text.trim()
-        : visionPresets[selectedPresetIndex].imageUrl;
-    final contextName = visionPresets[selectedPresetIndex].name;
+    final activeUrl = pickedFile != null
+        ? pickedFile!.path
+        : (useCustomImage && customImageUrl.text.trim().isNotEmpty
+            ? customImageUrl.text.trim()
+            : visionPresets[selectedPresetIndex].imageUrl);
+    final contextName = pickedFile != null
+        ? 'Ảnh chụp thực tế (${visionPresets[selectedPresetIndex].name})'
+        : visionPresets[selectedPresetIndex].name;
     final noteText = visionNote.text.trim();
 
     setState(() {
@@ -207,6 +268,275 @@ class _AiScreenState extends ConsumerState<AiScreen> {
     } finally {
       if (mounted) setState(() => loading = false);
     }
+  }
+
+  Future<void> _shareToGroup(BuildContext context) async {
+    if (draft == null) return;
+    final controller = ref.read(appControllerProvider);
+    final groups = controller.groups;
+
+    if (groups.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Bạn chưa tham gia nhóm nào. Hãy tham gia hoặc tạo nhóm ở tab "Nhóm" để rủ bạn bè!',
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final selectedGroup = await showModalBottomSheet<QuestGroup>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                '🏸 Chọn nhóm để rủ bạn bè',
+                style: Theme.of(ctx).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Nhiệm vụ AI sẽ được đăng vào nhóm và tin nhắn rủ rê sẽ gửi vào đoạn chat của nhóm.',
+                style: TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 14),
+              ...groups.map(
+                (g) => Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Theme.of(ctx).colorScheme.primaryContainer,
+                      child: Icon(
+                        Icons.groups,
+                        color: Theme.of(ctx).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    title: Text(g.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text('${g.members.length} thành viên • ${g.description}'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () => Navigator.pop(ctx, g),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (selectedGroup == null || !context.mounted) return;
+
+    setState(() => loading = true);
+    try {
+      await controller.addQuest(
+        title: draft!.title,
+        description: draft!.description,
+        category: draft!.category,
+        difficulty: draft!.difficulty,
+        steps: draft!.steps,
+        imageUrl: draft!.imageUrl,
+        groupId: selectedGroup.id,
+        createdByAi: true,
+      );
+
+      final locationName = tabIndex == 1 ? visionPresets[selectedPresetIndex].name : 'địa điểm ngoài trời';
+      controller.sendGroupMessage(
+        selectedGroup.id,
+        '🏸 [KÈO MỚI] Mình vừa tạo thử thách "${draft!.title}" từ $locationName! Cả nhóm cùng vào nhận kèo rèn luyện nhé! 🚀',
+      );
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã đăng thử thách lên nhóm "${selectedGroup.name}" và thông báo cho bạn bè! 🎉'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể chia sẻ lên nhóm: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  Future<void> _copyInviteMessage(BuildContext context) async {
+    if (draft == null) return;
+    final locationName = tabIndex == 1 ? visionPresets[selectedPresetIndex].name : 'LifeQuest';
+    final buffer = StringBuffer();
+    buffer.writeln('🏸 KÈO ĐI CHƠI & RÈN LUYỆN: ${draft!.title.toUpperCase()}');
+    buffer.writeln('📍 Địa điểm / Bối cảnh: $locationName');
+    buffer.writeln('⚡ Mức độ: ${draft!.difficulty.name.toUpperCase()} (~${draft!.estimatedMinutes} phút)');
+    buffer.writeln('📝 Các bước thử thách:');
+    for (var i = 0; i < draft!.steps.length; i++) {
+      buffer.writeln('  ${i + 1}. ${draft!.steps[i]}');
+    }
+    if (draft!.safetyNote.isNotEmpty) {
+      buffer.writeln('🛡️ Lưu ý an toàn: ${draft!.safetyNote}');
+    }
+    buffer.writeln('\n👉 Mở app LifeQuest nhận kèo cùng tích lũy XP và lên cấp nhé!');
+
+    await Clipboard.setData(ClipboardData(text: buffer.toString()));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã sao chép lời rủ đi chơi! Bạn có thể dán vào Zalo/Messenger/SMS.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  void _showQuestQrModal(BuildContext context) {
+    if (draft == null) return;
+    final payload = Uri(
+      scheme: 'lifequest',
+      host: 'quest',
+      queryParameters: {
+        'title': draft!.title,
+        'desc': draft!.description,
+        'cat': draft!.category,
+        'diff': draft!.difficulty.name,
+        'steps': draft!.steps.join('|||'),
+        'xp': '${draft!.estimatedMinutes * 5}',
+        if (draft!.imageUrl != null && draft!.imageUrl!.isNotEmpty)
+          'img': draft!.imageUrl!,
+      },
+    ).toString();
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.qr_code_2, color: Color(0xFF0284C7), size: 28),
+                  SizedBox(width: 8),
+                  Text(
+                    'Mã QR Làm Chung Nhiệm Vụ',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Đưa mã này cho bạn bè quét để cùng nhận và rèn luyện thử thách "${draft!.title}"!',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: QrImageView(
+                  data: payload,
+                  version: QrVersions.auto,
+                  size: 200.0,
+                  gapless: true,
+                  eyeStyle: const QrEyeStyle(
+                    eyeShape: QrEyeShape.square,
+                    color: Color(0xFF0F172A),
+                  ),
+                  dataModuleStyle: const QrDataModuleStyle(
+                    dataModuleShape: QrDataModuleShape.square,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.bolt, size: 16, color: Color(0xFFEAB308)),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${draft!.steps.length} bước thử thách • +${draft!.estimatedMinutes * 5} XP',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF334155),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: payload));
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Đã sao chép mã QR (URL liên kết)! Bạn có thể gửi cho bạn bè.'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.copy, size: 18),
+                      label: const Text('Sao chép mã'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Đóng'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -306,7 +636,7 @@ class _AiScreenState extends ConsumerState<AiScreen> {
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (context, idx) {
                 final preset = visionPresets[idx];
-                final isSelected = !useCustomImage && selectedPresetIndex == idx;
+                final isSelected = pickedFile == null && !useCustomImage && selectedPresetIndex == idx;
                 return ChoiceChip(
                   avatar: Icon(preset.icon, size: 18),
                   label: Text(preset.name),
@@ -315,6 +645,40 @@ class _AiScreenState extends ConsumerState<AiScreen> {
                 );
               },
             ),
+          ),
+          const SizedBox(height: 12),
+
+          // Nút bấm: Chụp ảnh trực tiếp hoặc Chọn từ thư viện ảnh
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.tonalIcon(
+                  onPressed: () => _pickImage(ImageSource.camera),
+                  icon: const Icon(Icons.camera_alt_outlined),
+                  label: const Text('Chụp ảnh mới'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FilledButton.tonalIcon(
+                  onPressed: () => _pickImage(ImageSource.gallery),
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: const Text('Chọn từ thư viện'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
 
@@ -328,23 +692,27 @@ class _AiScreenState extends ConsumerState<AiScreen> {
               children: [
                 AspectRatio(
                   aspectRatio: 16 / 9,
-                  child: Image.network(
-                    activePhotoUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      child: const Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.image_not_supported_outlined, size: 36),
-                            SizedBox(height: 6),
-                            Text('Hình ảnh minh chứng bối cảnh'),
-                          ],
+                  child: pickedFile != null
+                      ? (kIsWeb
+                          ? Image.network(pickedFile!.path, fit: BoxFit.cover)
+                          : Image.file(File(pickedFile!.path), fit: BoxFit.cover))
+                      : Image.network(
+                          activePhotoUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            child: const Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.image_not_supported_outlined, size: 36),
+                                  SizedBox(height: 6),
+                                  Text('Hình ảnh minh chứng bối cảnh'),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  ),
                 ),
                 Positioned(
                   top: 10,
@@ -352,16 +720,22 @@ class _AiScreenState extends ConsumerState<AiScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.65),
+                      color: Colors.black.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.lens_blur_outlined, color: Colors.greenAccent, size: 14),
+                        Icon(
+                          pickedFile != null ? Icons.camera_alt : Icons.lens_blur_outlined,
+                          color: Colors.greenAccent,
+                          size: 14,
+                        ),
                         const SizedBox(width: 6),
                         Text(
-                          visionPresets[selectedPresetIndex].name,
+                          pickedFile != null
+                              ? 'Ảnh chụp thực tế của bạn'
+                              : visionPresets[selectedPresetIndex].name,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
@@ -372,11 +746,27 @@ class _AiScreenState extends ConsumerState<AiScreen> {
                     ),
                   ),
                 ),
+                if (pickedFile != null)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Material(
+                      color: Colors.black54,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: _clearPickedImage,
+                        child: const Padding(
+                          padding: EdgeInsets.all(6),
+                          child: Icon(Icons.close, color: Colors.white, size: 18),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
           const SizedBox(height: 12),
-
           TextField(
             controller: visionNote,
             maxLength: 160,
@@ -549,7 +939,23 @@ class _AiScreenState extends ConsumerState<AiScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFF0284C7),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => _showQuestQrModal(context),
+            icon: const Icon(Icons.qr_code_2),
+            label: const Text('📱 Tạo mã QR rủ bạn làm chung'),
+          ),
+          const SizedBox(height: 8),
+          FilledButton.tonalIcon(
+            onPressed: () => _shareToGroup(context),
+            icon: const Icon(Icons.sports_tennis),
+            label: const Text('🏸 Rủ bạn bè / Đăng vào nhóm'),
+          ),
+          const SizedBox(height: 8),
           FilledButton.tonalIcon(
             onPressed: () => showModalBottomSheet<void>(
               context: context,
@@ -565,8 +971,14 @@ class _AiScreenState extends ConsumerState<AiScreen> {
                 createdByAi: true,
               ),
             ),
-            icon: const Icon(Icons.edit_note),
-            label: const Text('Xem lại và lưu thành quest'),
+            icon: const Icon(Icons.person_outline),
+            label: const Text('Lưu thành nhiệm vụ cá nhân'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => _copyInviteMessage(context),
+            icon: const Icon(Icons.share_outlined),
+            label: const Text('📤 Sao chép lời rủ đi chơi (Zalo/SMS)'),
           ),
         ],
       ],
