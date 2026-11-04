@@ -282,15 +282,20 @@ class HomeScreen extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'TỔNG ĐIỂM KINH NGHIỆM',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF94A3B8),
-                      letterSpacing: 0.5,
+                  const Expanded(
+                    child: Text(
+                      'TỔNG ĐIỂM KINH NGHIỆM',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF94A3B8),
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
@@ -335,9 +340,13 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    'so với chu kỳ trước',
-                    style: TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8)),
+                  const Flexible(
+                    child: Text(
+                      'so với chu kỳ trước',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11.5, color: Color(0xFF94A3B8)),
+                    ),
                   ),
                 ],
               ),
@@ -950,7 +959,9 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    isDone ? 'Đạt' : (isToday ? 'Hôm nay' : 'Mục tiêu'),
+                    isDone ? 'Đạt' : (isToday ? 'Hôm nay' : 'Chờ'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 9.5,
                       fontWeight: FontWeight.w600,
@@ -2306,26 +2317,32 @@ class _NovaraStatItem extends StatelessWidget {
           child: Icon(icon, color: const Color(0xFF0284C7), size: 18),
         ),
         const SizedBox(width: 10),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF0C1E3C),
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF0C1E3C),
+                ),
               ),
-            ),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF64748B),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF64748B),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
