@@ -56,19 +56,19 @@ flutter run
 
 ---
 
-## 👥 Tài khoản kiểm thử nhanh (Demo Accounts)
+## 👥 Tài khoản kiểm thử (Demo Accounts)
 
-Trên màn hình Đăng nhập của ứng dụng, hệ thống đã tích hợp sẵn **2 nút bấm 1-chạm** để Thầy và người chấm thi có thể vào ngay mà không cần gõ bàn phím:
+Dữ liệu mẫu được tạo tự động khi backend khởi động (`backend/src/seed.js`). Mật khẩu chung: `123456`. Nhập email và mật khẩu ở màn hình Đăng nhập.
 
-* **Tài khoản Người dùng (User Kỳ):**
-  * Email: `ky@lifequest.vn` | Mật khẩu: `123456`
-  * Nút bấm nhanh: Bấm vào chip **`[ 👤 User: Kỳ ]`** $\rightarrow$ Bấm **Đăng nhập**.
-  * Quyền hạn: Trải nghiệm toàn bộ Gamification, Làm nhiệm vụ, Tích checklist nhận XP, Dùng trợ lý AI, Tham gia nhóm.
+| Email | Vai trò | Ghi chú |
+| :--- | :--- | :--- |
+| `lam@lifequest.vn` | **Admin** | Bảng điều khiển quản trị, kiểm duyệt, chủ nhóm Flutter |
+| `ky@lifequest.vn` | User | Chủ CLB Cầu Lông, có nhiệm vụ cầu lông/bóng đá |
+| `loi@lifequest.vn` | User | Chủ Hội Bóng Đá, nhiệm vụ chạy bộ |
+| `tuan@lifequest.vn` | User | Nhiệm vụ học Flutter |
+| `maianh@lifequest.vn` | User | Thành viên CLB Cầu Lông |
 
-* **Tài khoản Quản trị viên (Admin Lãm):**
-  * Email: `lam@lifequest.vn` | Mật khẩu: `123456`
-  * Nút bấm nhanh: Bấm vào chip **`[ 🛡️ Admin: Lãm ]`** $\rightarrow$ Bấm **Đăng nhập**.
-  * Quyền hạn: Bảng điều khiển Deep Ocean Glass, giám sát tiến độ 4 thành viên, theo dõi 4 nhiệm vụ đang chạy, Trung tâm kiểm duyệt nội dung.
+Nhóm mẫu: **CLB Cầu Lông Chiều Thứ 7** (mã `CAULONG26`), **Hội Bóng Đá Cuối Tuần** (`BONGDA26`), **Nhóm Học Flutter Nhóm 10** (`FLUTTER26`), đã có sẵn tin nhắn nhóm và tin nhắn 1-1 giữa Lãm, Kỳ, Lợi, Tuấn.
 
 ---
 
@@ -81,13 +81,13 @@ Dự án tuân thủ nghiêm ngặt quy trình kiểm thử tự động với t
 flutter analyze
 # Kết quả: No issues found! (0 cảnh báo, 0 lỗi)
 
-# 2. Kiểm thử Unit & Widget Frontend Flutter (38 test cases)
+# 2. Kiểm thử Unit & Widget Frontend Flutter (35 test cases)
 flutter test
-# Kết quả: All tests passed! (38/38 PASS 100%)
+# Kết quả: All tests passed! (35/35 PASS 100%)
 
-# 3. Kiểm thử tích hợp Backend REST API & Database (12 test suites)
+# 3. Kiểm thử tích hợp Backend REST API & Database (14 test cases)
 cd backend && npm test
-# Kết quả: 12 pass, 0 fail (12/12 PASS 100%)
+# Kết quả: 14 pass, 0 fail (14/14 PASS 100%)
 ```
 
 ---

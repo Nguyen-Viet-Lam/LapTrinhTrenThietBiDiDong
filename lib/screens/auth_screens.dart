@@ -118,7 +118,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              const Text('Duy trì đăng nhập', style: TextStyle(fontSize: 13, color: Color(0xFF475569))),
+              const Flexible(
+                child: Text(
+                  'Duy trì đăng nhập',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 13, color: Color(0xFF475569)),
+                ),
+              ),
               const Spacer(),
               TextButton(
                 style: TextButton.styleFrom(
@@ -233,37 +240,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               'Chưa có tài khoản? Đăng ký ngay',
               style: TextStyle(fontWeight: FontWeight.w600),
             ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ActionChip(
-                avatar: const Icon(Icons.person, size: 16, color: Color(0xFF2563EB)),
-                label: const Text('User: Kỳ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                backgroundColor: const Color(0xFFEFF6FF),
-                side: const BorderSide(color: Color(0xFFBFDBFE)),
-                onPressed: () {
-                  setState(() {
-                    email.text = 'ky@lifequest.vn';
-                    password.text = '123456';
-                  });
-                },
-              ),
-              const SizedBox(width: 10),
-              ActionChip(
-                avatar: const Icon(Icons.shield, size: 16, color: Color(0xFF0F172A)),
-                label: const Text('Admin: Lãm', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                backgroundColor: const Color(0xFFF1F5F9),
-                side: const BorderSide(color: Color(0xFFCBD5E1)),
-                onPressed: () {
-                  setState(() {
-                    email.text = 'lam@lifequest.vn';
-                    password.text = '123456';
-                  });
-                },
-              ),
-            ],
           ),
         ],
       ),

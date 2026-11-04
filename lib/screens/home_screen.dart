@@ -1496,15 +1496,19 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Text(
-                'Giám sát nhiệm vụ thành viên',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 17,
-                  color: Colors.white,
+              const Expanded(
+                child: Text(
+                  'Giám sát nhiệm vụ thành viên',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
@@ -1563,7 +1567,10 @@ class HomeScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Row(
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1580,7 +1587,6 @@ class HomeScreen extends ConsumerWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 8),
                           Text(
                             '${t['category']} • +${t['xp']} XP',
                             style: const TextStyle(fontSize: 11, color: Color(0xFF7DD3FC)),
@@ -1852,7 +1858,8 @@ class _DeepOceanGlassCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Container(
+              Flexible(
+                child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: badgeBg,
@@ -1861,12 +1868,15 @@ class _DeepOceanGlassCard extends StatelessWidget {
                 ),
                 child: Text(
                   badgeText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: badgeColor,
                   ),
                 ),
+              ),
               ),
             ],
           ),

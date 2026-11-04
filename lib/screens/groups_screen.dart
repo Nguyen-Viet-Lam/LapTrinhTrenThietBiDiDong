@@ -493,6 +493,7 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
   @override
   void initState() {
     super.initState();
+    ref.read(appControllerProvider).loadGroupMessages(widget.groupId);
     _subscribeSse();
   }
 
@@ -507,6 +508,11 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
             const SnackBar(content: Text('Nhóm đã bị giải tán bởi trưởng nhóm.')),
           );
           Navigator.pop(context);
+          return;
+        }
+
+        if (event.type == 'message.created') {
+          controller.loadGroupMessages(widget.groupId);
           return;
         }
 
@@ -1183,9 +1189,22 @@ class DirectChatSheet extends ConsumerStatefulWidget {
 class _DirectChatSheetState extends ConsumerState<DirectChatSheet> {
   final TextEditingController _msgController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  Timer? _pollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    final controller = ref.read(appControllerProvider);
+    controller.loadDirectMessages(widget.peerId);
+    _pollTimer = Timer.periodic(
+      const Duration(seconds: 4),
+      (_) => controller.loadDirectMessages(widget.peerId),
+    );
+  }
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _msgController.dispose();
     _scrollController.dispose();
     super.dispose();

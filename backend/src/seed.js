@@ -17,6 +17,7 @@ export function seed(db) {
     {id: 'loi-user', email: 'loi@lifequest.vn', name: 'Lợi', xp: 190, streak: 2, longest: 5, interests: '["Chạy bộ", "Đọc sách"]'},
     {id: 'tuan-user', email: 'tuan@lifequest.vn', name: 'Tuấn (Khách)', xp: 50, streak: 1, longest: 2, interests: '["Khám phá", "Thể thao"]'},
     {id: 'demo-user', email: 'demo@lifequest.vn', name: 'Thành Viên Demo', xp: 450, streak: 7, longest: 14, interests: '["Học tập", "Thể thao"]'},
+    {id: 'maianh-user', email: 'maianh@lifequest.vn', name: 'Mai Anh', xp: 320, streak: 5, longest: 9, interests: '["Cầu lông", "Yoga"]'},
     {id: 'friend-user', email: 'ban@lifequest.vn', name: 'Gia Huy', xp: 180, streak: 3, longest: 5, interests: '["Sức khỏe"]'},
   ];
 
@@ -127,8 +128,66 @@ export function seed(db) {
     }
   }
 
+  // 4. CLB thể thao & học tập của nhóm (Lãm, Kỳ, Lợi, Tuấn + Mai Anh) kèm tin nhắn mẫu
+  const clubs = [
+    {id: 'club-badminton', name: 'CLB Cầu Lông Chiều Thứ 7', desc: 'Hẹn nhau đánh cầu lông mỗi chiều thứ 7 tại sân HUTECH', code: 'CAULONG26', owner: 'ky-user', members: ['lam-admin', 'loi-user', 'tuan-user', 'maianh-user']},
+    {id: 'club-football', name: 'Hội Bóng Đá Cuối Tuần', desc: 'Đá bóng sân 7 giao hữu Chủ nhật hàng tuần', code: 'BONGDA26', owner: 'loi-user', members: ['ky-user', 'tuan-user', 'lam-admin']},
+    {id: 'club-flutter', name: 'Nhóm Học Flutter Nhóm 10', desc: 'Cùng làm đồ án Lập trình thiết bị di động', code: 'FLUTTER26', owner: 'lam-admin', members: ['ky-user', 'loi-user', 'tuan-user']},
+  ];
+  for (const c of clubs) {
+    if (db.prepare('SELECT 1 x FROM groups_ WHERE id=?').get(c.id)) continue;
+    const h = createHash('sha256').update('lifequest-invite:' + c.code).digest('hex');
+    ins('INSERT INTO groups_ VALUES (?,?,?,?,?,?,?,?)', c.id, c.name, c.desc, c.owner, h, c.code, new Date(Date.now() + 365 * 864e5).toISOString(), now);
+    ins("INSERT INTO group_members VALUES (?,?, 'owner', ?)", c.id, c.owner, now);
+    for (const m of c.members) ins("INSERT OR IGNORE INTO group_members VALUES (?,?, 'member', ?)", c.id, m, now);
+  }
+
+  const minutesAgo = (m) => new Date(Date.now() - m * 60000).toISOString();
+  const addMsg = (id, group, from, to, content, ago) => {
+    if (db.prepare('SELECT 1 x FROM messages WHERE id=?').get(id)) return;
+    ins('INSERT INTO messages (id,group_id,sender_id,receiver_id,content,created_at) VALUES (?,?,?,?,?,?)', id, group, from, to, content, minutesAgo(ago));
+  };
+  // Tin nhắn nhóm
+  addMsg('m-bad-1', 'club-badminton', 'ky-user', null, 'Chiều thứ 7 này 17h đánh cầu lông nhé mọi người 🏸', 300);
+  addMsg('m-bad-2', 'club-badminton', 'maianh-user', null, 'Mình tham gia! Ai mang cầu không?', 280);
+  addMsg('m-bad-3', 'club-badminton', 'loi-user', null, 'Lợi mang 2 ống cầu, Tuấn lo đặt sân nha', 260);
+  addMsg('m-bad-4', 'club-badminton', 'tuan-user', null, 'OK, Tuấn đặt sân số 3 lúc 17h.', 240);
+  addMsg('m-bad-5', 'club-badminton', 'lam-admin', null, 'Mình đến muộn 15 phút, cứ bắt đầu trước nhé 👍', 200);
+  addMsg('m-fb-1', 'club-football', 'loi-user', null, 'Chủ nhật này đá sân 7, đủ 14 người chưa?', 180);
+  addMsg('m-fb-2', 'club-football', 'ky-user', null, 'Kỳ rủ thêm 3 bạn lớp nữa, đủ rồi ⚽', 170);
+  addMsg('m-fb-3', 'club-football', 'tuan-user', null, 'Tuấn làm thủ môn nha 🧤', 150);
+  addMsg('m-fl-1', 'club-flutter', 'lam-admin', null, 'Mọi người nhớ pull code mới nhất trước khi làm phần của mình.', 120);
+  addMsg('m-fl-2', 'club-flutter', 'ky-user', null, 'Kỳ làm xong màn Nhiệm vụ rồi, Lãm review giúp.', 100);
+  addMsg('m-fl-3', 'club-flutter', 'loi-user', null, 'Lợi đang làm phần AI, chiều nay xong.', 80);
+  addMsg('m-fl-4', 'club-flutter', 'tuan-user', null, 'Tuấn viết xong test đăng nhập, đã pass hết ✅', 60);
+  // Tin nhắn 1-1
+  addMsg('dm-lam-ky-1', null, 'lam-admin', 'ky-user', 'Kỳ ơi, tối nay họp nhóm lúc 8h nhé.', 90);
+  addMsg('dm-lam-ky-2', null, 'ky-user', 'lam-admin', 'Ok Lãm, mình online đúng giờ.', 85);
+  addMsg('dm-lam-loi-1', null, 'lam-admin', 'loi-user', 'Lợi, phần AI xong chưa?', 70);
+  addMsg('dm-lam-loi-2', null, 'loi-user', 'lam-admin', 'Sắp xong rồi, tối mình gửi nhé.', 65);
+  addMsg('dm-lam-tuan-1', null, 'tuan-user', 'lam-admin', 'Lãm ơi, mình gửi file test case rồi nha.', 50);
+  addMsg('dm-lam-tuan-2', null, 'lam-admin', 'tuan-user', 'Nhận rồi, cảm ơn Tuấn 👍', 45);
+  addMsg('dm-ky-loi-1', null, 'ky-user', 'loi-user', 'Chủ nhật đá bóng nhớ mang áo xanh nha.', 40);
+  addMsg('dm-ky-loi-2', null, 'loi-user', 'ky-user', 'Ok, hẹn 6h sáng ở sân.', 35);
+  addMsg('dm-ky-tuan-1', null, 'ky-user', 'tuan-user', 'Tuấn đặt sân cầu lông giúp mình nhé.', 30);
+  addMsg('dm-ky-tuan-2', null, 'tuan-user', 'ky-user', 'Đã đặt sân 3 lúc 17h rồi.', 25);
+
+  // 5. Nhiệm vụ nhóm
+  const groupQuests = [
+    {id: 'gq-badminton', group: 'club-badminton', owner: 'ky-user', assignee: 'tuan-user', title: 'Đặt sân cầu lông thứ 7', desc: 'Đặt sân và báo giờ cho cả nhóm.', cat: 'Sức khỏe', diff: 'easy', xp: 20, steps: ['Gọi chủ sân', 'Chốt giờ 17h', 'Báo nhóm']},
+    {id: 'gq-football', group: 'club-football', owner: 'loi-user', assignee: null, title: 'Chuẩn bị trận bóng Chủ nhật', desc: 'Chia đội, mang bóng và nước uống.', cat: 'Sức khỏe', diff: 'medium', xp: 40, steps: ['Chia 2 đội', 'Mang bóng', 'Mua nước cho cả đội']},
+    {id: 'gq-flutter', group: 'club-flutter', owner: 'lam-admin', assignee: 'ky-user', title: 'Hoàn thiện màn hình Nhiệm vụ', desc: 'Sửa lỗi tràn viền và hoàn tất checklist.', cat: 'Học tập', diff: 'hard', xp: 70, steps: ['Sửa lỗi overflow', 'Viết widget test', 'Chạy thử trên điện thoại thật']},
+  ];
+  for (const q of groupQuests) {
+    if (hasQuest(q.id)) continue;
+    ins('INSERT INTO quests (id,owner_id,group_id,assignee_id,title,description,category,difficulty,xp_reward,due_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+      q.id, q.owner, q.group, q.assignee, q.title, q.desc, q.cat, q.diff, q.xp, new Date(Date.now() + 3 * 864e5).toISOString(), now, now);
+    q.steps.forEach((t, i) => ins('INSERT INTO quest_steps VALUES (?,?,?,0,?)', randomUUID(), q.id, t, i));
+  }
+
   // Thông báo ban đầu
   ins('INSERT OR IGNORE INTO notifications VALUES (?,?,?,?,0,?)', 'notif-lam', 'lam-admin', 'Chào mừng Lãm đến LifeQuest', 'Bắt đầu ngày mới với mục tiêu rèn luyện và quản lý!', now);
+  ins('INSERT OR IGNORE INTO notifications VALUES (?,?,?,?,0,?)', 'notif-ky', 'ky-user', 'Lời mời cầu lông', 'CLB Cầu Lông Chiều Thứ 7 hẹn 17h thứ 7 này!', now);
   ins('INSERT OR IGNORE INTO notifications VALUES (?,?,?,?,0,?)', 'notif-demo', 'demo-user', 'Chào mừng đến LifeQuest', 'Bắt đầu một nhiệm vụ nhỏ hôm nay nhé!', now);
 
   return true;

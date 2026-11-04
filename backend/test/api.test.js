@@ -134,6 +134,30 @@ test('SSE: thành viên nhóm nhận sự kiện realtime, người ngoài bị 
 });
 
 test('migration: user_version = số file sql', () => {
-  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 2);
+  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 3);
   assert.ok(db.prepare('PRAGMA table_info(users)').all().some((c) => c.name === 'password_changed_at'));
+});
+
+test('tin nhắn: chat nhóm lưu DB, chỉ thành viên mới đọc/gửi được', async () => {
+  const ky = await login('ky@lifequest.vn');
+  const demo = await login();
+  const list = await call('GET', '/groups/club-badminton/messages', null, ky);
+  assert.equal(list.status, 200);
+  assert.ok(list.body.length >= 5);
+  const sent = await call('POST', '/groups/club-badminton/messages', {content: 'Test tin nhắn nhóm'}, ky);
+  assert.equal(sent.status, 201);
+  assert.equal(sent.body.isSelf, true);
+  assert.equal((await call('GET', '/groups/club-badminton/messages', null, demo)).status, 404);
+  assert.equal((await call('POST', '/groups/club-badminton/messages', {content: 'x'}, demo)).status, 404);
+  assert.equal((await call('POST', '/groups/club-badminton/messages', {content: '  '}, ky)).status, 400);
+});
+
+test('tin nhắn 1-1: gửi và đọc giữa hai người', async () => {
+  const lam = await login('lam@lifequest.vn');
+  const tuan = await login('tuan@lifequest.vn');
+  const sent = await call('POST', '/messages/tuan-user', {content: 'Chào Tuấn'}, lam);
+  assert.equal(sent.status, 201);
+  const fromTuan = (await call('GET', '/messages/lam-admin', null, tuan)).body;
+  assert.ok(fromTuan.some((m) => m.content === 'Chào Tuấn' && m.isSelf === false));
+  assert.equal((await call('POST', '/messages/lam-admin', {content: 'x'}, lam)).status, 404);
 });

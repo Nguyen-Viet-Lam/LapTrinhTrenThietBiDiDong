@@ -565,6 +565,27 @@ class AppController extends ChangeNotifier {
 
     getGroupMessages(groupId).add(msg);
     notifyListeners();
+    _postMessage('/groups/$groupId/messages', trimmed, () => loadGroupMessages(groupId));
+  }
+
+  /// Tải lịch sử chat nhóm từ máy chủ (SQLite) và thay thế bộ nhớ đệm.
+  Future<void> loadGroupMessages(String groupId) async {
+    try {
+      final res = await apiClient.get<List<dynamic>>('/groups/$groupId/messages');
+      final list = (res.data ?? [])
+          .map((m) => GroupChatMessage.fromJson(m as Map<String, dynamic>))
+          .toList();
+      if (list.isEmpty) return;
+      _groupMessages[groupId] = list;
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> _postMessage(String path, String content, Future<void> Function() reload) async {
+    try {
+      await apiClient.post<Map<String, dynamic>>(path, data: {'content': content});
+      await reload();
+    } catch (_) {}
   }
 
   // ------------------ Direct 1-1 Chat ------------------
@@ -607,6 +628,20 @@ class AppController extends ChangeNotifier {
 
     getDirectMessages(peerId).add(msg);
     notifyListeners();
+    _postMessage('/messages/$peerId', trimmed, () => loadDirectMessages(peerId));
+  }
+
+  /// Tải hội thoại 1-1 từ máy chủ (SQLite) và thay thế bộ nhớ đệm.
+  Future<void> loadDirectMessages(String peerId) async {
+    try {
+      final res = await apiClient.get<List<dynamic>>('/messages/$peerId');
+      final list = (res.data ?? [])
+          .map((m) => DirectMessage.fromJson(m as Map<String, dynamic>))
+          .toList();
+      if (list.isEmpty) return;
+      _directMessages[peerId] = list;
+      notifyListeners();
+    } catch (_) {}
   }
 
   // ------------------ AI ------------------

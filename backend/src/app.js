@@ -41,6 +41,7 @@ const schemas = {
     difficulty: z.enum(['easy', 'medium', 'hard']), dueAt: z.string().datetime({offset: true}).nullable(),
   }).partial(),
   group: z.object({name: str(80), description: z.string().trim().max(300).default('')}),
+  message: z.object({content: str(1000)}),
   report: z.object({targetType: z.enum(['user', 'quest', 'group']), targetId: str(128), reason: str(500)}),
   ai: z.object({goal: str(300), difficulty: z.enum(['easy', 'medium', 'hard']).default('easy'), constraints: z.string().max(300).optional()}),
 };
@@ -321,6 +322,37 @@ export function createApp({db = openDb(), jwtSecret = process.env.JWT_SECRET ?? 
     emit(g.id, 'group.deleted');
     run('DELETE FROM groups_ WHERE id=?', g.id);
     res.status(204).end();
+  }));
+  // ---------- Tin nhắn ----------
+  const msgDto = (m, uid) => ({
+    id: m.id, groupId: m.group_id, senderId: m.sender_id, senderName: m.sender_name, receiverId: m.receiver_id,
+    content: m.content, createdAt: m.created_at, isSelf: m.sender_id === uid,
+  });
+  const MSG_SELECT = 'SELECT m.*, u.display_name sender_name FROM messages m JOIN users u ON u.id=m.sender_id';
+  app.get('/api/groups/:id/messages', auth, wrap((req, res) => {
+    if (!isMember(req.params.id, req.user.id)) throw notFound('Không tìm thấy nhóm.');
+    res.json(all(`${MSG_SELECT} WHERE m.group_id=? ORDER BY m.created_at DESC LIMIT 200`, req.params.id).reverse().map((m) => msgDto(m, req.user.id)));
+  }));
+  app.post('/api/groups/:id/messages', auth, wrap((req, res) => {
+    if (!isMember(req.params.id, req.user.id)) throw notFound('Không tìm thấy nhóm.');
+    const d = parse(schemas.message, req.body);
+    const id = randomUUID();
+    run('INSERT INTO messages (id,group_id,sender_id,content,created_at) VALUES (?,?,?,?,?)', id, req.params.id, req.user.id, d.content, now());
+    emit(req.params.id, 'message.created', {messageId: id, senderId: req.user.id});
+    res.status(201).json(msgDto(one(`${MSG_SELECT} WHERE m.id=?`, id), req.user.id));
+  }));
+  app.get('/api/messages/:peerId', auth, wrap((req, res) => {
+    const me = req.user.id, peer = req.params.peerId;
+    res.json(all(`${MSG_SELECT} WHERE (m.sender_id=? AND m.receiver_id=?) OR (m.sender_id=? AND m.receiver_id=?) ORDER BY m.created_at DESC LIMIT 200`, me, peer, peer, me).reverse().map((m) => msgDto(m, me)));
+  }));
+  app.post('/api/messages/:peerId', auth, wrap((req, res) => {
+    const peer = one('SELECT id FROM users WHERE id=?', req.params.peerId);
+    if (!peer || peer.id === req.user.id) throw notFound('Không tìm thấy người nhận.');
+    const d = parse(schemas.message, req.body);
+    const id = randomUUID();
+    run('INSERT INTO messages (id,sender_id,receiver_id,content,created_at) VALUES (?,?,?,?,?)', id, req.user.id, peer.id, d.content, now());
+    notify(peer.id, `Tin nhắn mới từ ${req.user.display_name}`, d.content.slice(0, 80));
+    res.status(201).json(msgDto(one(`${MSG_SELECT} WHERE m.id=?`, id), req.user.id));
   }));
   // Realtime: EventSource không gửi được header nên auth chấp nhận ?token=
   app.get('/api/groups/:id/events', auth, (req, res, next) => {

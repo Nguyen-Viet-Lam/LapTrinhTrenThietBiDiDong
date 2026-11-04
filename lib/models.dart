@@ -619,7 +619,7 @@ class GroupChatMessage {
         senderId: json['senderId'] as String,
         senderName: json['senderName'] as String,
         content: json['content'] as String,
-        createdAt: DateTime.parse(json['createdAt'] as String),
+        createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
         isSelf: json['isSelf'] as bool? ?? false,
       );
 }
@@ -673,7 +673,7 @@ class DirectMessage {
     receiverId: json['receiverId'] as String,
     senderName: json['senderName'] as String,
     content: json['content'] as String,
-    createdAt: DateTime.parse(json['createdAt'] as String),
+    createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
     isSelf: json['isSelf'] as bool? ?? false,
   );
 }
