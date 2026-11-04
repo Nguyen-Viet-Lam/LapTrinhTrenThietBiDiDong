@@ -17,7 +17,7 @@
 ## 1. Nguyễn Viết Lãm – 35 điểm
 
 **Database (SQLite) – làm ở đâu**
-- `backend/sql/001_init.sql` – schema 9 bảng: users, groups_, group_members, quests, quest_steps, notifications, reports, blocks, ai_requests.
+- `backend/sql/001_init.sql` – schema 9 bảng đầu: users, groups_, group_members, quests, quest_steps, notifications, reports, blocks, ai_requests (bảng thứ 10 `messages` ở file 003).
 - `backend/sql/002_password_changed.sql` – cột `password_changed_at`.
 - `backend/sql/003_messages.sql` – bảng `messages` (chat nhóm + chat 1-1).
 - `backend/src/db.js` (1-46) – mở DB, migration tự động theo `PRAGMA user_version`, hàm transaction `tx`.
