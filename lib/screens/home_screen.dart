@@ -1996,7 +1996,14 @@ class _PomodoroDialogState extends State<_PomodoroDialog> {
             child: const Icon(Icons.timer, color: Color(0xFF10B981)),
           ),
           const SizedBox(width: 12),
-          const Text('Phiên Tập Trung (25p)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+          const Expanded(
+            child: Text(
+              'Tập trung (25p)',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+            ),
+          ),
         ],
       ),
       content: Column(
