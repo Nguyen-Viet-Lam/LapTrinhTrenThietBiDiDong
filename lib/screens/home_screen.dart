@@ -1638,9 +1638,10 @@ class HomeScreen extends ConsumerWidget {
   void _showBadges(BuildContext context, List<UserBadge> badges) {
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       showDragHandle: true,
       builder: (context) => SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1689,7 +1690,7 @@ class HomeScreen extends ConsumerWidget {
                 ),
             ],
           ),
-        ),
+        )),
       ),
     );
   }

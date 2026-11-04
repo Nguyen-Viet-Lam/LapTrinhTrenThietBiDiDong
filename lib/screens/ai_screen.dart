@@ -298,9 +298,10 @@ class _AiScreenState extends ConsumerState<AiScreen> {
 
     final selectedGroup = await showModalBottomSheet<QuestGroup>(
       context: context,
+      isScrollControlled: true,
       showDragHandle: true,
       builder: (ctx) => SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -336,7 +337,7 @@ class _AiScreenState extends ConsumerState<AiScreen> {
               ),
             ],
           ),
-        ),
+        )),
       ),
     );
 
@@ -435,7 +436,7 @@ class _AiScreenState extends ConsumerState<AiScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) => SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -543,7 +544,7 @@ class _AiScreenState extends ConsumerState<AiScreen> {
               ),
             ],
           ),
-        ),
+        )),
       ),
     );
   }
