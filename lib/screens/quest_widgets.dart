@@ -717,6 +717,7 @@ class _CreateQuestSheetState extends ConsumerState<CreateQuestSheet> {
               const SizedBox(height: 10),
               if (widget.groupId == null && controller.groups.isNotEmpty) ...[
                 DropdownButtonFormField<String?>(
+                  isExpanded: true,
                   initialValue: selectedGroupId,
                   decoration: const InputDecoration(
                     labelText: 'Phạm vi nhiệm vụ',
@@ -725,12 +726,12 @@ class _CreateQuestSheetState extends ConsumerState<CreateQuestSheet> {
                   items: [
                     const DropdownMenuItem<String?>(
                       value: null,
-                      child: Text('Cá nhân (Chỉ mình tôi)'),
+                      child: Text('Cá nhân (Chỉ mình tôi)', overflow: TextOverflow.ellipsis),
                     ),
                     ...controller.groups.map(
                       (g) => DropdownMenuItem<String?>(
                         value: g.id,
-                        child: Text('${g.name} (Nhóm)'),
+                        child: Text('${g.name} (Nhóm)', overflow: TextOverflow.ellipsis),
                       ),
                     ),
                   ],
@@ -742,6 +743,7 @@ class _CreateQuestSheetState extends ConsumerState<CreateQuestSheet> {
                 const SizedBox(height: 10),
               ],
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: category,
                 decoration: const InputDecoration(labelText: 'Danh mục'),
                 items:
@@ -792,6 +794,7 @@ class _CreateQuestSheetState extends ConsumerState<CreateQuestSheet> {
               const SizedBox(height: 10),
               if (group != null) ...[
                 DropdownButtonFormField<String?>(
+                  isExpanded: true,
                   initialValue: assigneeId,
                   decoration: const InputDecoration(
                     labelText: 'Giao cho thành viên (tùy chọn)',
@@ -996,6 +999,7 @@ class _EditQuestSheetState extends ConsumerState<EditQuestSheet> {
             ),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
+              isExpanded: true,
               initialValue: category,
               decoration: const InputDecoration(labelText: 'Danh mục'),
               items:
@@ -1148,6 +1152,7 @@ Future<void> showReportDialog(
           mainAxisSize: MainAxisSize.min,
           children: [
             DropdownButtonFormField<String>(
+              isExpanded: true,
               initialValue: reason,
               items:
                   const [

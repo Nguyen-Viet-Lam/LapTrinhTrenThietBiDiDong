@@ -79,15 +79,19 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              const Text(
-                'Nhiệm vụ ưu tiên hôm nay',
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 18,
-                  color: Color(0xFF0C1E3C),
+              const Expanded(
+                child: Text(
+                  'Nhiệm vụ ưu tiên hôm nay',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 17,
+                    color: Color(0xFF0C1E3C),
+                  ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF99F6E4),
