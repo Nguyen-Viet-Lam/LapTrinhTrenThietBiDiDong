@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 import '../api/api_client.dart';
 import '../api/api_exception.dart';
@@ -58,8 +57,8 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () => _join(context, ref),
-                  icon: const Icon(Icons.qr_code_scanner),
-                  label: const Text('Quét / Nhập mã'),
+                  icon: const Icon(Icons.vpn_key_outlined),
+                  label: const Text('Nhập mã nhóm'),
                 ),
               ),
               const SizedBox(width: 10),
@@ -282,7 +281,7 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          title: const Text('Tham gia nhóm'),
+          title: const Text('Tham gia nhóm bằng mã'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -290,9 +289,9 @@ class _GroupsScreenState extends ConsumerState<GroupsScreen> {
                 controller: code,
                 textCapitalization: TextCapitalization.characters,
                 decoration: InputDecoration(
-                  labelText: 'Mã mời hoặc liên kết QR',
-                  hintText: 'Ví dụ LIFE2026 hoặc dán mã QR',
-                  prefixIcon: const Icon(Icons.qr_code_2),
+                  labelText: 'Mã nhóm',
+                  hintText: 'Ví dụ CAULONG26',
+                  prefixIcon: const Icon(Icons.vpn_key_outlined),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.paste),
                     tooltip: 'Dán từ clipboard',
@@ -425,42 +424,28 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
             ),
             if (group.inviteCode != null && group.inviteCode!.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: QrImageView(
-                    data: 'lifequest://group?invite=${group.inviteCode}',
-                    version: QrVersions.auto,
-                    size: 150.0,
-                    gapless: true,
-                    eyeStyle: const QrEyeStyle(
-                      eyeShape: QrEyeShape.square,
-                      color: Color(0xFF0F172A),
-                    ),
-                    dataModuleStyle: const QrDataModuleStyle(
-                      dataModuleShape: QrDataModuleShape.square,
-                      color: Color(0xFF0F172A),
-                    ),
-                  ),
-                ),
+              const Text(
+                'Mã nhóm',
+                style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
               ),
-              const SizedBox(height: 6),
-              const Center(
-                child: Text(
-                  '📱 Quét mã để vào nhóm nhanh chóng',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+              const SizedBox(height: 4),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F9FF),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFBAE6FD)),
+                ),
+                child: SelectableText(
+                  group.inviteCode!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 3,
+                    color: Color(0xFF0C1E3C),
+                  ),
                 ),
               ),
             ],
@@ -803,7 +788,7 @@ class _GroupDetailSheetState extends ConsumerState<GroupDetailSheet> {
                             color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.qr_code_2, color: Color(0xFF38BDF8), size: 20),
+                          child: const Icon(Icons.vpn_key_outlined, color: Color(0xFF38BDF8), size: 20),
                         ),
                         const SizedBox(width: 10),
                         const Column(

@@ -18,7 +18,6 @@ LifeQuest biến việc rèn luyện mục tiêu đời thường của sinh vi�
 | Gọi API | **Dio** | HTTP client, gắn JWT, timeout, bắt lỗi 401 để đăng xuất |
 | Lưu cục bộ | **shared_preferences** | Lưu JWT token |
 | Camera/thư viện ảnh | **image_picker** | Chụp hoặc chọn ảnh cho AI Thị giác |
-| Mã QR | **qr_flutter** | Tạo QR mời vào nhóm / nhiệm vụ |
 | Backend | **Node.js 24 + Express 4** | REST API gọn, dễ trình bày |
 | Cơ sở dữ liệu | **SQLite** (`node:sqlite` có sẵn trong Node) | Một file `backend/data/lifequest.db`, quan hệ 10 bảng, khóa ngoại + `ON DELETE CASCADE`, ACID |
 | Migration | File `backend/sql/NNN_*.sql` + `PRAGMA user_version` | Mỗi file chạy đúng một lần, thêm cột = thêm file mới |
@@ -27,7 +26,7 @@ LifeQuest biến việc rèn luyện mục tiêu đời thường của sinh vi�
 | Realtime | **Server-Sent Events (SSE)** | Backend đẩy sự kiện nhóm (thành viên mới, quest hoàn thành, tin nhắn) xuống app; nhẹ hơn WebSocket vì chỉ cần một chiều |
 | AI | **Google Gemini API** (văn bản + ảnh) | Chia kế hoạch, nhận diện bối cảnh ảnh |
 | Mã mời nhóm | **SHA-256** | DB chỉ so khớp bằng hash của mã mời |
-| Kiểm thử | `flutter_test` (35 test), `node --test` (15 test) | Unit + widget + tích hợp API |
+| Kiểm thử | `flutter_test` (33 test), `node --test` (15 test) | Unit + widget + tích hợp API |
 
 ## 3. Kiến trúc tổng thể
 ```
@@ -79,5 +78,5 @@ Schema ở `backend/sql/001_init.sql`, `002_password_changed.sql`, `003_messages
 | Làm sao tránh AI trả nội dung nguy hiểm? | Từ cấm → 422; prompt giới hạn; validate JSON; người dùng duyệt trước khi lưu. | Lợi |
 | Nếu Gemini quá tải thì sao? | Tự thử model dự phòng; vẫn lỗi thì báo 502, app hiển thị thông báo, không lưu gì. | Lợi |
 | Quản lý trạng thái trong app? | `AppController` (ChangeNotifier) + Riverpod; màn hình `watch` để tự vẽ lại. | Kỳ |
-| Kiểm thử gồm những gì? | 35 test Flutter (unit/widget) + 15 test backend (API, quyền, SSE, migration, tin nhắn). | Tuấn |
+| Kiểm thử gồm những gì? | 33 test Flutter (unit/widget) + 15 test backend (API, quyền, SSE, migration, tin nhắn). | Tuấn |
 | Mật khẩu lưu thế nào? | Băm bcrypt, không lưu bản rõ. | Tuấn |

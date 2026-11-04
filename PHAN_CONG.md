@@ -54,7 +54,6 @@
 - `test/app_controller_test.dart` – tạo quest, hoàn thành quest idempotent, đăng nhập/401.
 - `test/models_test.dart` – công thức level, tiến độ checklist.
 - `test/database_volume_test.dart` – hiệu năng tìm kiếm/lọc 100 nhiệm vụ.
-- `test/qr_quest_test.dart` – mã QR nhiệm vụ/nhóm.
 
 ## 3. Trần Ngọc Lợi – 20 điểm
 

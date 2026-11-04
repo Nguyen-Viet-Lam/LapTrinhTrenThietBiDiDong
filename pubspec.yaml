@@ -42,7 +42,6 @@ dependencies:
   crypto: ^3.0.7
   dio: ^5.11.1
   image_picker: ^1.2.2
-  qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:

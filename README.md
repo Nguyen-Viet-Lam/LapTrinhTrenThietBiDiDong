@@ -81,9 +81,9 @@ Dự án tuân thủ nghiêm ngặt quy trình kiểm thử tự động với t
 flutter analyze
 # Kết quả: No issues found! (0 cảnh báo, 0 lỗi)
 
-# 2. Kiểm thử Unit & Widget Frontend Flutter (35 test cases)
+# 2. Kiểm thử Unit & Widget Frontend Flutter (33 test cases)
 flutter test
-# Kết quả: All tests passed! (35/35 PASS 100%)
+# Kết quả: All tests passed! (33/33 PASS 100%)
 
 # 3. Kiểm thử tích hợp Backend REST API & Database (14 test cases)
 cd backend && npm test

@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 import '../api/api_exception.dart';
 import '../app_controller.dart';
@@ -411,144 +410,6 @@ class _AiScreenState extends ConsumerState<AiScreen> {
     }
   }
 
-  void _showQuestQrModal(BuildContext context) {
-    if (draft == null) return;
-    final payload = Uri(
-      scheme: 'lifequest',
-      host: 'quest',
-      queryParameters: {
-        'title': draft!.title,
-        'desc': draft!.description,
-        'cat': draft!.category,
-        'diff': draft!.difficulty.name,
-        'steps': draft!.steps.join('|||'),
-        'xp': '${draft!.estimatedMinutes * 5}',
-        if (draft!.imageUrl != null && draft!.imageUrl!.isNotEmpty)
-          'img': draft!.imageUrl!,
-      },
-    ).toString();
-
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: SingleChildScrollView(child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.qr_code_2, color: Color(0xFF0284C7), size: 28),
-                  SizedBox(width: 8),
-                  Text(
-                    'Mã QR Làm Chung Nhiệm Vụ',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Đưa mã này cho bạn bè quét để cùng nhận và rèn luyện thử thách "${draft!.title}"!',
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-              ),
-              const SizedBox(height: 18),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: QrImageView(
-                  data: payload,
-                  version: QrVersions.auto,
-                  size: 200.0,
-                  gapless: true,
-                  eyeStyle: const QrEyeStyle(
-                    eyeShape: QrEyeShape.square,
-                    color: Color(0xFF0F172A),
-                  ),
-                  dataModuleStyle: const QrDataModuleStyle(
-                    dataModuleShape: QrDataModuleShape.square,
-                    color: Color(0xFF0F172A),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.bolt, size: 16, color: Color(0xFFEAB308)),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${draft!.steps.length} bước thử thách • +${draft!.estimatedMinutes * 5} XP',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF334155),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(text: payload));
-                        Navigator.pop(ctx);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Đã sao chép mã QR (URL liên kết)! Bạn có thể gửi cho bạn bè.'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.copy, size: 18),
-                      label: const Text('Sao chép mã'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Đóng'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        )),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final activePhotoUrl = useCustomImage && customImageUrl.text.trim().isNotEmpty
@@ -950,16 +811,6 @@ class _AiScreenState extends ConsumerState<AiScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF0284C7),
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () => _showQuestQrModal(context),
-            icon: const Icon(Icons.qr_code_2),
-            label: const Text('📱 Tạo mã QR rủ bạn làm chung'),
-          ),
-          const SizedBox(height: 8),
           FilledButton.tonalIcon(
             onPressed: () => _shareToGroup(context),
             icon: const Icon(Icons.sports_tennis),
