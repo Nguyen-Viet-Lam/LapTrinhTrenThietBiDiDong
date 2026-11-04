@@ -58,15 +58,17 @@
 
 ## 3. Trần Ngọc Lợi – 20 điểm
 
-- `lib/screens/ai_screen.dart` (1-987) – Trợ lý AI: preset ảnh, review-before-save.
-- `lib/app_controller.dart:647-839` – `generateAiPlan`, `generateVisionQuest` (kế hoạch 3/5/7 bước).
-- `backend/src/ai.js` (1-55) + route `POST /api/ai/quest-plan` trong `backend/src/app.js` – gọi Gemini, kiểm duyệt an toàn (HTTP 422).
+- `lib/screens/ai_screen.dart` (1-987) – Trợ lý AI: tab kế hoạch văn bản, tab AI Thị giác (chụp/chọn ảnh), preset bối cảnh, review-before-save.
+- `lib/app_controller.dart:647-839` – `generateAiPlan`, `generateVisionQuest` (ảnh thật gửi `/ai/vision-plan`; ảnh mẫu dùng kế hoạch 3/5/7 bước).
+- `backend/src/ai.js` – `callGemini` (thử lần lượt nhiều model, tự chuyển khi 503/429/timeout), `generatePlan` (văn bản), `generateVisionPlan` (ảnh, Gemini Vision), danh sách từ cấm `UNSAFE_TERMS`.
+- Route `POST /api/ai/quest-plan` và `POST /api/ai/vision-plan` trong `backend/src/app.js` – kiểm duyệt an toàn (HTTP 422), giới hạn tần suất (HTTP 429), thiếu key trả 503.
 - `lib/screens/notifications_sheet.dart` (1-99) + phần thông báo trong `app_controller.dart`.
 - Phần An toàn: `lib/screens/profile_screen.dart:354-528` (`BlockedUsersSheet`, `SafetyCenterSheet`), phần report/block trong `app_controller.dart`.
+- Cấu hình key: `backend/.env` (`GEMINI_API_KEY`, `GEMINI_MODEL`) – file này không đưa lên Git.
 
 **Kiểm thử Lợi phụ trách:**
 - `test/ai_vision_test.dart` – AI cầu lông 3 bước, học tập 7 bước, chặn từ khóa nguy hiểm 422, quest có ảnh.
-- `backend/test/api.test.js` – test AI (`:74`), thông báo/báo cáo/chặn (`:82`, `:108`).
+- `backend/test/api.test.js` – AI văn bản (`:74`), AI ảnh (cuối file: 503 khi thiếu key, 400 sai định dạng, 422 nội dung nguy hiểm, 401 chưa đăng nhập), thông báo/báo cáo/chặn (`:82`, `:108`).
 
 ## 4. Châu Tuấn – 15 điểm
 
@@ -97,7 +99,7 @@
 Mã mời: `CAULONG26`, `BONGDA26`, `FLUTTER26`.
 
 ## Cách chạy
-1. Backend: `cd backend && npm install && npm start` (cổng 3000, DB tự tạo và nạp dữ liệu mẫu).
+1. Backend: `cd backend && npm install`, copy `.env.example` thành `.env` và dán `GEMINI_API_KEY` (lấy ở https://aistudio.google.com/apikey), rồi `npm start` (cổng 3000, DB tự tạo và nạp dữ liệu mẫu). Không có key thì AI ảnh báo lỗi 503, phần còn lại vẫn chạy.
 2. Điện thoại thật (cùng Wi-Fi với máy tính): `flutter run --dart-define=API_BASE_URL=http://<IP-máy-tính>:3000/api`; hoặc trong Android Studio chọn cấu hình **LifeQuest Phone** (sửa IP trong `.run/LifeQuest Phone.run.xml` nếu đổi mạng).
 3. Máy ảo Android: `flutter run` (mặc định dùng `10.0.2.2:3000`).
 
@@ -105,3 +107,4 @@ Mã mời: `CAULONG26`, `BONGDA26`, `FLUTTER26`.
 - Mỗi người làm trên nhánh `feat/<ten>`, tạo Pull Request vào `main`, Lãm review và merge.
 - Trước khi nộp: `flutter analyze`, `flutter test`, `cd backend && npm test` phải pass.
 - Cả 4 người chạy thử app trên điện thoại thật và nắm rõ phần của mình để trả lời vấn đáp.
+- Tài liệu vấn đáp (công nghệ, ý tưởng, câu hỏi thường gặp): `VAN_DAP.md`.
