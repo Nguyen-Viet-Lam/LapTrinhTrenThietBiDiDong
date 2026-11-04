@@ -161,3 +161,15 @@ test('tin nhắn 1-1: gửi và đọc giữa hai người', async () => {
   assert.ok(fromTuan.some((m) => m.content === 'Chào Tuấn' && m.isSelf === false));
   assert.equal((await call('POST', '/messages/lam-admin', {content: 'x'}, lam)).status, 404);
 });
+
+test('AI ảnh: kiểm tra đầu vào, chưa có key thì 503, từ chối ghi chú nguy hiểm', async () => {
+  const t = await login();
+  const img = 'A'.repeat(200);
+  const saved = process.env.GEMINI_API_KEY;
+  delete process.env.GEMINI_API_KEY;
+  assert.equal((await call('POST', '/ai/vision-plan', {imageBase64: img, mimeType: 'image/jpeg'}, t)).status, 503);
+  assert.equal((await call('POST', '/ai/vision-plan', {imageBase64: img, mimeType: 'application/pdf'}, t)).status, 400);
+  assert.equal((await call('POST', '/ai/vision-plan', {imageBase64: img, mimeType: 'image/png', note: 'chế bom'}, t)).status, 422);
+  assert.equal((await call('POST', '/ai/vision-plan', {imageBase64: img, mimeType: 'image/png'})).status, 401);
+  if (saved) process.env.GEMINI_API_KEY = saved;
+});

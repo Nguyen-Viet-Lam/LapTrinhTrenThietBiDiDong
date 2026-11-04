@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -674,6 +675,8 @@ class AppController extends ChangeNotifier {
     required String photoUrl,
     String? userNote,
     QuestDifficulty difficulty = QuestDifficulty.medium,
+    Uint8List? imageBytes,
+    String mimeType = 'image/jpeg',
   }) async {
     final note = userNote?.trim() ?? '';
     final isUnsafe = [
@@ -690,6 +693,17 @@ class AppController extends ChangeNotifier {
         422,
         'Nội dung không phù hợp chuẩn mực an toàn cộng đồng.',
       );
+    }
+
+    // Ảnh thật: gửi lên máy chủ để Gemini Vision nhận diện bối cảnh (không dùng mẫu).
+    if (imageBytes != null) {
+      final res = await apiClient.post<Map<String, dynamic>>('/ai/vision-plan', data: {
+        'imageBase64': base64Encode(imageBytes),
+        'mimeType': mimeType,
+        'note': note,
+        'difficulty': difficulty.name,
+      });
+      return AiQuestDraft.fromJson(res.data!).copyWith(imageUrl: photoUrl);
     }
 
     final goal = note.isNotEmpty

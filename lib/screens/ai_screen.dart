@@ -230,7 +230,7 @@ class _AiScreenState extends ConsumerState<AiScreen> {
             ? customImageUrl.text.trim()
             : visionPresets[selectedPresetIndex].imageUrl);
     final contextName = pickedFile != null
-        ? 'Ảnh chụp thực tế (${visionPresets[selectedPresetIndex].name})'
+        ? 'Ảnh chụp thực tế'
         : visionPresets[selectedPresetIndex].name;
     final noteText = visionNote.text.trim();
 
@@ -242,6 +242,13 @@ class _AiScreenState extends ConsumerState<AiScreen> {
     });
 
     try {
+      final file = pickedFile;
+      final bytes = file != null ? await file.readAsBytes() : null;
+      final lowerPath = file?.path.toLowerCase() ?? '';
+      final mime = lowerPath.endsWith('.png')
+          ? 'image/png'
+          : (lowerPath.endsWith('.webp') ? 'image/webp' : 'image/jpeg');
+      if (!mounted) return;
       final result = await ref
           .read(appControllerProvider)
           .generateVisionQuest(
@@ -249,6 +256,8 @@ class _AiScreenState extends ConsumerState<AiScreen> {
             photoUrl: activeUrl,
             userNote: noteText.isEmpty ? null : noteText,
             difficulty: difficulty,
+            imageBytes: bytes,
+            mimeType: mime,
           );
       if (mounted) setState(() => draft = result);
     } on ApiException catch (exception) {

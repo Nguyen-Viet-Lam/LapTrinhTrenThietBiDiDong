@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import {createHash, randomBytes, randomUUID} from 'node:crypto';
 import {z} from 'zod';
 import {openDb, tx} from './db.js';
-import {generatePlan, isUnsafe} from './ai.js';
+import {generatePlan, generateVisionPlan, isUnsafe, ALLOWED_IMAGE_TYPES} from './ai.js';
 
 const XP = {easy: 20, medium: 40, hard: 70};
 const CATEGORIES = ['Sức khỏe', 'Học tập', 'Công việc', 'Gia đình', 'Khác'];
@@ -42,6 +42,10 @@ const schemas = {
   }).partial(),
   group: z.object({name: str(80), description: z.string().trim().max(300).default('')}),
   message: z.object({content: str(1000)}),
+  vision: z.object({
+    imageBase64: z.string().min(100).max(7_000_000), mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp']),
+    note: z.string().trim().max(300).default(''), difficulty: z.enum(['easy', 'medium', 'hard']).default('easy'),
+  }),
   report: z.object({targetType: z.enum(['user', 'quest', 'group']), targetId: str(128), reason: str(500)}),
   ai: z.object({goal: str(300), difficulty: z.enum(['easy', 'medium', 'hard']).default('easy'), constraints: z.string().max(300).optional()}),
 };
@@ -54,6 +58,7 @@ const parse = (schema, data) => {
 export function createApp({db = openDb(), jwtSecret = process.env.JWT_SECRET ?? 'dev-secret-change-me'} = {}) {
   const app = express();
   app.use(cors());
+  app.use('/api/ai/vision-plan', express.json({limit: '8mb'}));
   app.use(express.json({limit: '100kb'}));
   const hub = new Map(); // groupId -> Set<res>  (đồng bộ nhóm thời gian thực qua SSE)
 
@@ -382,6 +387,25 @@ export function createApp({db = openDb(), jwtSecret = process.env.JWT_SECRET ?? 
       run("UPDATE ai_requests SET outcome='failed' WHERE user_id=?", req.user.id);
       console.error('AI failed:', e.message);
       throw new HttpError(502, 'AI chưa thể tạo kế hoạch. Vui lòng thử lại sau.');
+    }
+  }));
+
+  app.post('/api/ai/vision-plan', auth, wrap(async (req, res) => {
+    const d = parse(schemas.vision, req.body);
+    if (!ALLOWED_IMAGE_TYPES.includes(d.mimeType)) throw bad('Định dạng ảnh không được hỗ trợ.');
+    if (isUnsafe(d.note)) throw new HttpError(422, 'LifeQuest không biến nội dung nguy hiểm thành nhiệm vụ. Hãy tìm hỗ trợ từ người đáng tin cậy.');
+    const last = one('SELECT last_request_at t FROM ai_requests WHERE user_id=?', req.user.id)?.t;
+    if (last && Date.now() - last < Number(process.env.AI_COOLDOWN_MS ?? 5000)) throw new HttpError(429, 'Vui lòng chờ vài giây trước khi yêu cầu tiếp.');
+    run('INSERT INTO ai_requests VALUES (?,?,?) ON CONFLICT(user_id) DO UPDATE SET last_request_at=excluded.last_request_at,outcome=excluded.outcome', req.user.id, Date.now(), 'started');
+    try {
+      const plan = await generateVisionPlan(d);
+      run("UPDATE ai_requests SET outcome='success' WHERE user_id=?", req.user.id);
+      res.json(plan);
+    } catch (e) {
+      run("UPDATE ai_requests SET outcome='failed' WHERE user_id=?", req.user.id);
+      if (e.code === 'NO_KEY') throw new HttpError(503, 'Máy chủ chưa cấu hình GEMINI_API_KEY nên chưa phân tích được ảnh.');
+      console.error('AI vision failed:', e.message);
+      throw new HttpError(502, 'AI chưa thể phân tích ảnh. Vui lòng thử lại sau.');
     }
   }));
 
