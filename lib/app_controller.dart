@@ -6,11 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'api/api_client.dart';
 import 'api/api_exception.dart';
 import 'models.dart';
-import 'repositories/auth_repository.dart';
-import 'repositories/group_repository.dart';
-import 'repositories/quest_repository.dart';
-import 'repositories/safety_repository.dart';
-import 'repositories/user_repository.dart';
 
 final appControllerProvider = ChangeNotifierProvider<AppController>((ref) {
   throw UnimplementedError('AppController must be overridden at bootstrap');
@@ -18,21 +13,9 @@ final appControllerProvider = ChangeNotifierProvider<AppController>((ref) {
 
 
 class AppController extends ChangeNotifier {
-  AppController(
-    this.apiClient, {
-    this.authRepository,
-    this.userRepository,
-    this.questRepository,
-    this.groupRepository,
-    this.safetyRepository,
-  });
+  AppController(this.apiClient);
 
   final ApiClient apiClient;
-  final IAuthRepository? authRepository;
-  final IUserRepository? userRepository;
-  final IQuestRepository? questRepository;
-  final IGroupRepository? groupRepository;
-  final ISafetyRepository? safetyRepository;
 
   AppUser? currentUser;
   UserStats? stats;
@@ -55,11 +38,6 @@ class AppController extends ChangeNotifier {
   static Future<AppController> create({
     ApiClient? client,
     SharedPreferences? preferences,
-    IAuthRepository? authRepo,
-    IUserRepository? userRepo,
-    IQuestRepository? questRepo,
-    IGroupRepository? groupRepo,
-    ISafetyRepository? safetyRepo,
   }) async {
     final prefs = preferences ?? await SharedPreferences.getInstance();
     late AppController controller;
@@ -70,29 +48,7 @@ class AppController extends ChangeNotifier {
             controller.handleUnauthorized();
           },
         );
-
-    IAuthRepository? aRepo = authRepo;
-    IUserRepository? uRepo = userRepo;
-    IQuestRepository? qRepo = questRepo;
-    IGroupRepository? gRepo = groupRepo;
-    ISafetyRepository? sRepo = safetyRepo;
-
-    try {
-      aRepo ??= FirebaseAuthRepository();
-      uRepo ??= FirestoreUserRepository();
-      qRepo ??= FirestoreQuestRepository();
-      gRepo ??= FirestoreGroupRepository();
-      sRepo ??= FirestoreSafetyRepository();
-    } catch (_) {}
-
-    controller = AppController(
-      api,
-      authRepository: aRepo,
-      userRepository: uRepo,
-      questRepository: qRepo,
-      groupRepository: gRepo,
-      safetyRepository: sRepo,
-    );
+    controller = AppController(api);
     await controller.init();
     return controller;
   }
@@ -109,14 +65,6 @@ class AppController extends ChangeNotifier {
 
   Future<void> init() async {
     try {
-      final fbUser = authRepository?.currentUser;
-      if (fbUser != null && userRepository != null) {
-        final profile = await userRepository!.getUserProfile(fbUser.uid);
-        if (profile != null) {
-          currentUser = profile;
-          await refreshAllData();
-        }
-      }
 
       if (currentUser == null) {
         await apiClient.loadToken();
@@ -157,34 +105,6 @@ class AppController extends ChangeNotifier {
     if (!normalized.contains('@')) return 'Email không hợp lệ.';
     if (password.isEmpty) return 'Vui lòng nhập mật khẩu.';
 
-    if (authRepository != null && userRepository != null) {
-      try {
-        final cred = await authRepository!.signIn(normalized, password);
-        final uid = cred.user?.uid;
-        if (uid != null) {
-          var profile = await userRepository!.getUserProfile(uid);
-          if (profile == null) {
-            profile = AppUser(
-              id: uid,
-              email: normalized,
-              displayName: cred.user?.displayName?.isNotEmpty == true
-                  ? cred.user!.displayName!
-                  : normalized.split('@').first,
-              createdAt: DateTime.now(),
-              lastActiveDate: DateTime.now().toIso8601String().substring(0, 10),
-            );
-            await userRepository!.saveUserProfile(profile);
-          }
-          currentUser = profile;
-          await refreshAllData();
-          notifyListeners();
-          return null;
-        }
-      } catch (fbError) {
-        debugPrint('Firebase login check: $fbError');
-      }
-    }
-
     try {
       final res = await apiClient.post<Map<String, dynamic>>('/auth/login', data: {
         'email': normalized,
@@ -211,29 +131,6 @@ class AppController extends ChangeNotifier {
     if (!normalized.contains('@')) return 'Email không hợp lệ.';
     if (password.length < 6) return 'Mật khẩu cần ít nhất 6 ký tự.';
 
-    if (authRepository != null && userRepository != null) {
-      try {
-        final cred = await authRepository!.signUp(normalized, password);
-        final uid = cred.user?.uid;
-        if (uid != null) {
-          final newUser = AppUser(
-            id: uid,
-            email: normalized,
-            displayName: trimmedName,
-            createdAt: DateTime.now(),
-            lastActiveDate: DateTime.now().toIso8601String().substring(0, 10),
-          );
-          await userRepository!.saveUserProfile(newUser);
-          currentUser = newUser;
-          await refreshAllData();
-          notifyListeners();
-          return null;
-        }
-      } catch (fbError) {
-        debugPrint('Firebase register check: $fbError');
-      }
-    }
-
     try {
       final res = await apiClient.post<Map<String, dynamic>>('/auth/register', data: {
         'displayName': trimmedName,
@@ -255,9 +152,6 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> logout() async {
-    try {
-      await authRepository?.signOut();
-    } catch (_) {}
     await apiClient.clearToken();
     handleUnauthorized();
   }
@@ -317,19 +211,6 @@ class AppController extends ChangeNotifier {
   // ------------------ Stats ------------------
 
   Future<void> fetchStats() async {
-    if (userRepository != null && currentUser != null && authRepository?.currentUser != null) {
-      try {
-        final s = await userRepository!.getUserStats(currentUser!.id);
-        stats = s;
-        currentUser = currentUser!.copyWith(
-          xp: s.xp,
-          streak: s.streak,
-          badges: s.badges,
-        );
-        notifyListeners();
-        return;
-      } catch (_) {}
-    }
 
     try {
       final res = await apiClient.get<Map<String, dynamic>>('/stats');
@@ -354,26 +235,6 @@ class AppController extends ChangeNotifier {
     String? groupId,
     String? q,
   }) async {
-    if (questRepository != null && currentUser != null && authRepository?.currentUser != null) {
-      try {
-        var list = await questRepository!.getQuests(
-          ownerId: groupId == null ? currentUser!.id : null,
-          groupId: groupId,
-          status: status,
-        );
-        if (q != null && q.isNotEmpty) {
-          final queryLower = q.toLowerCase();
-          list = list
-              .where((item) =>
-                  item.title.toLowerCase().contains(queryLower) ||
-                  item.description.toLowerCase().contains(queryLower))
-              .toList();
-        }
-        quests = list;
-        notifyListeners();
-        return;
-      } catch (_) {}
-    }
 
     try {
       final query = <String, dynamic>{};
@@ -425,48 +286,6 @@ class AppController extends ChangeNotifier {
     for (final step in cleanSteps) {
       if (step.length > 160) {
         throw const ApiException(400, 'Mỗi bước tối đa 160 ký tự.');
-      }
-    }
-
-    if (questRepository != null && currentUser != null && authRepository?.currentUser != null) {
-      try {
-        final newQ = Quest(
-          id: '',
-          ownerId: currentUser!.id,
-          title: trimmedTitle,
-          description: description.trim(),
-          category: category,
-          difficulty: difficulty,
-          status: QuestStatus.active,
-          steps: cleanSteps
-              .asMap()
-              .entries
-              .map((e) => QuestStep(
-                    id: 'step-${e.key + 1}',
-                    title: e.value,
-                    isDone: false,
-                  ))
-              .toList(),
-          createdAt: DateTime.now(),
-          dueAt: dueAt,
-          groupId: groupId,
-          assigneeId: assigneeId,
-          createdByAi: createdByAi,
-          imageUrl: imageUrl,
-          xpReward: switch (difficulty) {
-            QuestDifficulty.easy => 20,
-            QuestDifficulty.medium => 40,
-            QuestDifficulty.hard => 70,
-          },
-        );
-
-        final created = await questRepository!.createQuest(newQ);
-        quests.insert(0, created);
-        await fetchStats();
-        notifyListeners();
-        return created;
-      } catch (e) {
-        debugPrint('Firestore addQuest error: $e, fallback to legacy');
       }
     }
 
@@ -538,21 +357,6 @@ class AppController extends ChangeNotifier {
   }
 
   Future<int> toggleStep(String questId, String stepId) async {
-    if (questRepository != null && currentUser != null && authRepository?.currentUser != null) {
-      final idx = quests.indexWhere((q) => q.id == questId);
-      if (idx >= 0) {
-        final q = quests[idx];
-        final step = q.steps.firstWhere((s) => s.id == stepId);
-        await questRepository!.toggleStep(questId, stepId, !step.isDone);
-        final updatedSteps = q.steps.map((s) => s.id == stepId ? s.copyWith(isDone: !s.isDone) : s).toList();
-        final done = updatedSteps.where((s) => s.isDone).length;
-        final progress = updatedSteps.isEmpty ? 0.0 : done / updatedSteps.length;
-        final updatedQ = q.copyWith(steps: updatedSteps);
-        quests[idx] = updatedQ;
-        notifyListeners();
-        return (progress * 100).round();
-      }
-    }
 
     final res = await apiClient.post<Map<String, dynamic>>(
       '/quests/$questId/steps/$stepId/toggle',
@@ -567,20 +371,6 @@ class AppController extends ChangeNotifier {
   }
 
   Future<CompleteQuestResult> completeQuest(String questId) async {
-    if (questRepository != null && currentUser != null && authRepository?.currentUser != null) {
-      try {
-        final result = await questRepository!.completeQuest(questId, currentUser!.id);
-        final idx = quests.indexWhere((q) => q.id == questId);
-        if (idx >= 0) {
-          quests[idx] = result.quest;
-        }
-        await fetchStats();
-        notifyListeners();
-        return result;
-      } catch (e) {
-        debugPrint('Firestore completeQuest error: $e, fallback to legacy');
-      }
-    }
 
     final res = await apiClient.post<Map<String, dynamic>>(
       '/quests/$questId/complete',
@@ -626,13 +416,6 @@ class AppController extends ChangeNotifier {
   // ------------------ Groups ------------------
 
   Future<void> fetchGroups() async {
-    if (groupRepository != null && currentUser != null && authRepository?.currentUser != null) {
-      try {
-        groups = await groupRepository!.getUserGroups(currentUser!.id);
-        notifyListeners();
-        return;
-      } catch (_) {}
-    }
 
     try {
       final res = await apiClient.get<List<dynamic>>('/groups');
@@ -672,22 +455,6 @@ class AppController extends ChangeNotifier {
       throw const ApiException(400, 'Mô tả tối đa 300 ký tự.');
     }
 
-    if (groupRepository != null && currentUser != null && authRepository?.currentUser != null) {
-      try {
-        final g = await groupRepository!.createGroup(
-          trimmedName,
-          description.trim(),
-          currentUser!.id,
-          currentUser!.displayName,
-        );
-        groups.insert(0, g);
-        notifyListeners();
-        return g;
-      } catch (e) {
-        debugPrint('Firestore createGroup error: $e, fallback to legacy');
-      }
-    }
-
     final res = await apiClient.post<Map<String, dynamic>>('/groups', data: {
       'name': trimmedName,
       'description': description.trim(),
@@ -701,21 +468,6 @@ class AppController extends ChangeNotifier {
   Future<String?> joinGroup(String inviteCode) async {
     final code = inviteCode.trim();
     if (code.isEmpty) return 'Vui lòng nhập mã mời.';
-
-    if (groupRepository != null && currentUser != null && authRepository?.currentUser != null) {
-      try {
-        final err = await groupRepository!.joinGroupByInviteCode(code, currentUser!.id, currentUser!.displayName);
-        if (err == null) {
-          await fetchGroups();
-          await fetchQuests();
-          notifyListeners();
-          return null;
-        }
-        return err;
-      } catch (e) {
-        debugPrint('Firestore joinGroup error: $e, fallback to legacy');
-      }
-    }
 
     try {
       final res = await apiClient.post<Map<String, dynamic>>('/groups/join', data: {

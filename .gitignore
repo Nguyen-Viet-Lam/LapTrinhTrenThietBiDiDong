@@ -33,9 +33,7 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
-firebase-debug.log
 firestore-debug.log
-.firebaserc
 .env
 
 # Symbolication related
@@ -50,7 +48,6 @@ app.*.map.json
 /android/app/release
 
 # Extra
-/.firebase/
 *.pdf
 *.mp4
 /YÊU CẦU*.docx
@@ -60,3 +57,8 @@ functions/node_modules/
 android/.gradle/
 android/.kotlin/
 android/local.properties
+
+# Root-level tooling junk
+/node_modules/
+/scripts/
+/data/
