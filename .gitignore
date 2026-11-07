@@ -50,7 +50,13 @@ app.*.map.json
 # Extra
 *.pdf
 *.mp4
-/YÊU CẦU*.docx
+*.docx
+*.doc
+*.pptx
+*.ppt
+*.xlsx
+*.xls
+~$*
 backend/node_modules/
 backend/data/
 functions/node_modules/
